@@ -81,7 +81,7 @@ a{color:var(--teal2)}
 <form id="f" autocomplete="off">
  <div class="q"><h3><span class="n">1</span> Which projects? <span class="req">required</span></h3>
   <p class="hint">Tick every project the work touches. Art made for a project is always saved in Art Assets too.</p>
-  <div class="chips" id="projects"></div><div id="redirect"></div><div id="openwork" aria-live="polite"></div>
+  <div class="chips" id="projects"></div><p class="note" id="defsnote" aria-live="polite"></p><div id="redirect"></div><div id="openwork" aria-live="polite"></div>
   <div id="newbox" hidden><label class="f" for="newname">Name of the new project</label><input type="text" id="newname" placeholder="e.g. Sudoku Tutor">
   <label class="f" for="newwhat">What it is, in a sentence</label><input type="text" id="newwhat" placeholder="e.g. A page that teaches sudoku techniques one at a time">
   <label class="f" for="newrepo">GitHub repo, if you've made one <small>(optional)</small></label><input type="text" id="newrepo" placeholder="fenw1ck/Sudoku-Tutor"></div></div>
@@ -175,9 +175,9 @@ const artInvolved=()=>projs.includes(ART)||get('kind')===ARTKIND;
 function P(){const ps=PS();return artInvolved()?(ps.find(p=>p.id===ART)||ps[0]):ps[0]}
 function ensureArt(){if(!projs.includes(ART)){projs.push(ART);artAdded=true;renderProjects();renderArea()}}let artAdded=false;
 function X(p){if(p&&p.isNew){const r=$('newrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');return Object.assign({},p,{name:'New project: '+($('newname').value.trim()||'(name)'),repo:r})}return p}
-function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),projs,(v,on)=>{projs=on?[...projs.filter(x=>x!==v),v]:projs.filter(x=>x!==v);if(v===ART&&!on)artAdded=false;renderArea();renderDetails();update()},true)}
+function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),projs,(v,on)=>{projs=on?[...projs.filter(x=>x!==v),v]:projs.filter(x=>x!==v);if(v===ART&&!on)artAdded=false;renderArea();if(on)applyDefs(v);renderDetails();update()},true)}
 function renderTypes(){chips($('types'),'type',Object.entries(TYPES).map(([k,t])=>[k,t.label,t.sub]),type,v=>{type=v;renderDetails();update()})}
-function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;update()})}
+function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;effortTouched=true;update()})}
 function renderNew(){$('newbox').hidden=!projs.includes('new')}
 function renderArea(){renderNew();const ps=PS(),keep=$('area').value,one=ps.length===1;$('area').innerHTML='<option value="">Not sure</option>'+ps.filter(p=>p.areas.length).map(p=>{const o=p.areas.map(a=>{const v=one?a:`${p.name}: ${a}`;return`<option value="${esc(v)}" ${v===keep?'selected':''}>${esc(a)}</option>`}).join('');return one?o:`<optgroup label="${esc(p.name)}">${o}</optgroup>`}).join('')+'<option value="Other">Other (say in the details)</option>'}
 const vals={};
@@ -219,6 +219,7 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const leave=lines($('leave').value);if(leave.length){tail.push('## Leave alone');leave.forEach(x=>tail.push(`- ${x}`));tail.push('')}
  if($('links').value.trim())tail.push(`Links: ${$('links').value.trim()}`,'');
  tail.push('## Before you start');for(const q of ps){if(q.isNew)tail.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else tail.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
+ for(const q of ps)if(!q.isNew&&q.docs&&q.docs.length)tail.push(`- Claude keeps no memory between requests: ${q.docs[0]} in ${q.repo} is the memory. When this work settles something later requests will need (a decision, a rule, where a thing lives), record it there.`);
  for(const r of openRepos()){const prs=openPRs(r);if(prs.length)tail.push(`- Open pull requests in ${r}, not merged yet: ${prs.map(x=>`#${x.n} "${x.t}"`).join(', ')}. If this work builds on one of them, branch from it; otherwise branch from main.`)}
  if((artInvolved()&&!artSkip())||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  if(bundle)tail.push(`- This is a bundle of ${n} tickets that share this context. Do them in order, one at a time: finish a ticket, say what changed and how you checked it, then start the next. A later ticket may build on an earlier one.`);
@@ -247,7 +248,7 @@ function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');p
 ['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 /* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
    The research library and the drawing programs load from the Art Assets site, so they are always current;
    when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
@@ -372,6 +373,18 @@ function sizeOf(){const t=TYPES[type],done=(t&&t.fields.some(f=>f[0]==='done')?l
 function sizeShow(){const z=sizeOf(),e=EFFORT.find(x=>x[0]===z.size);$('sizeout').innerHTML=`<div class="redirect"><b>Looks ${esc(e[1])}</b>: ${esc(e[2])}. ${z.why.length?'Because of '+esc(z.why.join(', '))+'.':'Not much is asked yet.'} ${z.size===effort?'That is what you have.':`<button type="button" class="ghost small" id="sizeuse">Use ${esc(e[1])}</button>`}</div>`;
  const u=$('sizeuse');if(u)u.onclick=()=>{effort=z.size;renderEffort();update();sizeShow()}}
 $('sizebtn').addEventListener('click',sizeShow);
+/* ---- reuse answers (25 Nov 2026): each project's usual job size, area, things to leave alone and expert sources
+   are saved when a ticket is copied or opened, and fill the empty fields next time that project is ticked. ---- */
+const getDefs=()=>{try{return JSON.parse(localStorage.getItem('rb-projdefaults')||'{}')}catch(e){return{}}};
+function saveDefs(){const D=getDefs(),one=projs.length===1;projs.forEach(id=>{D[id]=Object.assign(D[id]||{},{effort,leave:$('leave').value,experts:$('experts').value},one&&$('area').value?{area:$('area').value}:{})});try{localStorage.setItem('rb-projdefaults',JSON.stringify(D))}catch(e){}}
+function applyDefs(id){const d=getDefs()[id];if(!d)return;const used=[];
+ if(d.leave&&!$('leave').value.trim()){$('leave').value=d.leave;used.push('things to leave alone')}
+ if(d.experts&&!$('experts').value.trim()){$('experts').value=d.experts;used.push('expert sources')}
+ if(d.area&&!$('area').value&&projs.length===1&&[...$('area').options].some(o=>o.value===d.area)){$('area').value=d.area;used.push('area')}
+ if(d.effort&&d.effort!==effort&&!effortTouched){effort=d.effort;renderEffort();used.push('job size')}
+ const n=PROJECTS.find(p=>p.id===id);$('defsnote').textContent=used.length?`Filled from your last ${n?n.name:id} ticket: ${used.join(', ')}. Change anything that doesn't fit.`:''}
+let effortTouched=false;
+document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))saveDefs()},true);
 function start(list){PROJECTS=list;started=true;const d=load();improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
