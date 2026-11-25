@@ -68,6 +68,9 @@ a{color:var(--teal2)}
 .part{border:1px solid var(--line);border-left:4px solid var(--teal2);border-radius:12px;padding:10px 14px 14px;margin:12px 0;background:var(--bg)}.phead{display:flex;justify-content:space-between;align-items:center;gap:10px}.phead b{font-family:Sora,sans-serif}button.small{min-height:36px;padding:0 12px;font-size:14px}
 .parts-links{padding:0 20px 16px;margin:0;list-style:none}.parts-links li{margin:4px 0}
 .openw{background:var(--soft);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}.openw ul{margin:4px 0 6px;padding-left:18px}.openw li{margin:2px 0}.tag{font-size:12px;font-weight:600;border-radius:999px;padding:0 7px;border:1px solid var(--line);margin-right:4px}
+.err{background:light-dark(#fde8e3,#3a1f1a);color:var(--coral);border:1px solid var(--coral);border-radius:10px;padding:8px 12px;margin:8px 0 0;font-size:15px;font-weight:600}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--sub);cursor:pointer;background:var(--bg)}.drop.over{border-color:var(--teal2);background:var(--soft)}
+.files{list-style:none;margin:8px 0 0;padding:0}.files li{display:flex;gap:10px;align-items:center;margin:6px 0;flex-wrap:wrap}.files img{width:56px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}.files .fi{font-size:26px}
 .why details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
 .why summary{cursor:pointer;font:700 17px Sora,sans-serif;min-height:30px}
 .why ul{margin:10px 0 0;padding-left:20px}.why li{margin:6px 0;max-width:75ch}
@@ -110,7 +113,8 @@ a{color:var(--teal2)}
   <p class="hint">How much work you expect, which sets how far Claude may go. Smaller jobs use less. Not sure? Use the button at the bottom.</p><div class="chips" id="effort"></div>
   <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
   <label class="f" for="experts">Sources to treat as expert <small>(optional: books, sites, people or files Claude should trust over a web search)</small></label><input type="text" id="experts" placeholder="e.g. Fitzpatrick's Elements; USDA PLANTS; the Stardew Valley wiki">
-  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…">
+  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"><p class="err" id="linkerr" role="alert" hidden></p>
+  <label class="f" for="filein">Screenshots or files <small>(optional; most useful for "Something is broken")</small></label><div class="drop" id="drop" tabindex="0" role="button" aria-label="Add screenshots or files">Drop screenshots or documents here, or <label for="filein" style="text-decoration:underline;cursor:pointer">choose files</label><input type="file" id="filein" multiple hidden></div><p class="hint" style="margin-top:6px">A ticket is text, so the files travel beside it: after <b>Open as GitHub issue</b>, drag them into the issue (GitHub keeps them), or paste them into the chat. Images have a Copy button.</p><ul class="files" id="filelist"></ul>
   <div class="btns" style="padding:12px 0 0"><button type="button" class="ghost" id="sizebtn">How big is this?</button></div><div id="sizeout" aria-live="polite"></div></div>
 </form>
 <aside class="panel">
@@ -143,6 +147,7 @@ let PROJECTS=[];
 const TYPES={
  bug:{label:'Something is broken',sub:'it worked, or should work, and doesn’t',title:'What happens',fields:[
   ['steps','Steps to see it','textarea','1. Open the game\n2. Solve Prop 1\n3. Open lock 12 on a phone',true,'One step per line.'],
+  ['where','Where exactly','text','Proposition 6, step 4; the bedroom off hall 3; the Copy button',false,'The proposition, step, room or button: fewer searches.'],
   ['expected','What should happen','text','The letters stay on the plate',true],
   ['actual','What happens instead','text','The letters vanish after the first cut',true],
   ['device','Device and browser','text','iPhone 13, Safari',false],
@@ -205,7 +210,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
  if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
- partChecks(out);if(effort==='quick'){const z=sizeOf();if(z.done>=5||z.np>1||z.parts)out.push(['todo',`Size check: Quick, but ${[z.done>=5&&z.done+' "Done when" lines',z.np>1&&z.np+' projects',z.parts&&(z.parts+1)+' tickets'].filter(Boolean).join(' and ')}. Try "How big is this?"`])}if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
+ partChecks(out);if(badLinks().length)out.push(['need','Fix the link: '+badLinks().join(', ')]);if(type==='bug'&&!FILES.length&&!$('links').value.trim())out.push(['todo','Add a screenshot or a link: it saves guessing']);if(effort==='quick'){const z=sizeOf();if(z.done>=5||z.np>1||z.parts)out.push(['todo',`Size check: Quick, but ${[z.done>=5&&z.done+' "Done when" lines',z.np>1&&z.np+' projects',z.parts&&(z.parts+1)+' tickets'].filter(Boolean).join(' and ')}. Try "How big is this?"`])}if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
@@ -214,6 +219,7 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const body=[];if(t){body.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){body.push(`${l}:`);lines(v).forEach((x,i)=>body.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else body.push(`${l}: ${v}`)}body.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){body.push('## Done when');done.forEach(x=>body.push(`- [ ] ${x}`));body.push('')}
  artBrief(body);
+ if(FILES.length){body.push('## Screenshots and files','Added beside this ticket (in the GitHub issue or the chat):');FILES.forEach(f=>body.push(`- ${f.name} (${kb(f.size)})`));body.push('')}
  const tail=[];const ex=$('experts').value.trim();if(ex){tail.push('## Sources to treat as expert');ex.split(/;|\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>tail.push(`- ${x}`));tail.push('')}
  keepLines(tail);
  const leave=lines($('leave').value);if(leave.length){tail.push('## Leave alone');leave.forEach(x=>tail.push(`- ${x}`));tail.push('')}
@@ -240,7 +246,7 @@ function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='n
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
  const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML='';renderKeep();renderOpen();renderArt();refreshParts();
+ $('redirect').innerHTML='';renderLinkErr();renderKeep();renderOpen();renderArt();refreshParts();
  const pl=$('partlinks');if(PARTS.length&&ready){const artP=PROJECTS.find(q=>q.id===ART),items=[[0,P()],...PARTS.map((pt,i)=>[i+1,pt.kind==='art'&&artP?artP:P()])];pl.innerHTML='<li class="note">Or open each ticket as its own issue:</li>'+items.map(([k,q])=>{if(!q||!q.repo)return'';const tx=ticket(k),ti=tx.split('\n')[0].replace(/^#\s*/,'');return`<li><a href="https://github.com/${q.repo}/issues/new?title=${encodeURIComponent(ti)}&body=${encodeURIComponent(tx.split('\n').slice(2).join('\n'))}" target="_blank" rel="noopener">Ticket ${k+1} of ${PARTS.length+1}: ${esc(ti)}</a> <small class="note">(${esc(q.repo)})</small></li>`}).join('')}else pl.innerHTML='';
  save()}
 function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,askip:$('a-skip').checked,keep:$('keepart').checked,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
@@ -248,7 +254,7 @@ function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');p
 ['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{FILES.forEach(f=>f.url&&URL.revokeObjectURL(f.url));FILES=[];renderFiles();effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 /* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
    The research library and the drawing programs load from the Art Assets site, so they are always current;
    when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
@@ -385,6 +391,21 @@ function applyDefs(id){const d=getDefs()[id];if(!d)return;const used=[];
  const n=PROJECTS.find(p=>p.id===id);$('defsnote').textContent=used.length?`Filled from your last ${n?n.name:id} ticket: ${used.join(', ')}. Change anything that doesn't fit.`:''}
 let effortTouched=false;
 document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))saveDefs()},true);
+/* ---- files and links (25 Nov 2026): screenshots or documents dropped here are listed on the ticket (the ticket is
+   text, so the files themselves go into the GitHub issue or the chat; images have a Copy button for pasting).
+   Links must look like web addresses (www.example.com or https://…), or the ticket is held until they do. ---- */
+let FILES=[];
+const URLRE=/^(https?:\/\/)?(www\.)?([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?([\/?#]\S*)?$/i;
+const badLinks=()=>$('links').value.split(/\s+|,\s+|;\s*/).map(x=>x.trim().replace(/[.)]+$/,'')).filter(Boolean).filter(x=>!URLRE.test(x));
+function renderLinkErr(){const b=badLinks();$('linkerr').hidden=!b.length;$('linkerr').textContent=b.length?`${b.length>1?'These don’t':'This doesn’t'} look like a web address: ${b.join(', ')}. Use dots and no spaces, like www.example.com or https://github.com/fenw1ck/euclid.`:''}
+const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+function addFiles(list){for(const f of list){if(FILES.some(x=>x.name===f.name&&x.size===f.size))continue;FILES.push({name:f.name,size:f.size,type:f.type,file:f,url:f.type.startsWith('image/')?URL.createObjectURL(f):''})}renderFiles();update()}
+function renderFiles(){$('filelist').innerHTML=FILES.map((f,i)=>`<li>${f.url?`<img src="${f.url}" alt="">`:'<span class="fi">📄</span>'}<span>${esc(f.name)} <small class="note">${kb(f.size)}</small></span>${f.url?`<button type="button" class="ghost small" data-copy="${i}">Copy image</button>`:''}<button type="button" class="ghost small" data-rmf="${i}">Remove</button></li>`).join('');
+ $('filelist').querySelectorAll('[data-rmf]').forEach(b=>b.onclick=()=>{const f=FILES.splice(+b.dataset.rmf,1)[0];if(f.url)URL.revokeObjectURL(f.url);renderFiles();update()});
+ $('filelist').querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const f=FILES[+b.dataset.copy];try{const png=f.type==='image/png'?f.file:await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);c.toBlob(res,'image/png')};im.src=f.url});await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);b.textContent='Copied'}catch(e){b.textContent='Can’t copy here'}setTimeout(()=>b.textContent='Copy image',1800)})}
+const dz=$('drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));$('filein').addEventListener('change',e=>{addFiles(e.target.files);e.target.value=''});
+dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('filein').click()}});
 function start(list){PROJECTS=list;started=true;const d=load();improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
