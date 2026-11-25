@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Request Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a calm work-order desk: exact, short, helpful.
+   IDEA: a job ticket — you fill in the order on the left, the ticket on the right writes itself and says when it is ready.
+   PICTURE: the live ticket with a perforated stub and a readiness meter; the form is the page.
+   COLOUR and TYPE: deep teal header and ticket band, paper body, coral accent; Sora + Figtree.
+   LAYOUT: form column left, sticky ticket right; stacks to form then ticket under 900px. */
+:root{color-scheme:light dark;--bg:light-dark(#f7f8f7,#121617);--card:light-dark(#ffffff,#1a2022);--ink:light-dark(#18211f,#e7ecea);--sub:light-dark(#58645f,#9aa8a3);--line:light-dark(#dce2df,#2b3436);--teal:light-dark(#0f4b55,#0c3a42);--teal2:light-dark(#1d7380,#5fb7c3);--coral:light-dark(#c8553d,#f08a70);--ok:light-dark(#1f7a4a,#6fcf97);--warn:light-dark(#9a5b00,#f2b45a);--soft:light-dark(#edf3f2,#1b2628)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Sora,system-ui,sans-serif;line-height:1.05;text-wrap:balance;margin:0}
+header{background:var(--teal);color:#eef6f5}
+.top{max-width:1240px;margin:0 auto;padding:26px max(5vw,16px) 26px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end}
+h1{font-size:clamp(30px,4.4vw,46px)}
+.top p{margin:8px 0 0;color:#c4dcd9;max-width:62ch}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
+.steps li{background:rgba(255,255,255,.1);border-radius:999px;padding:6px 12px;font-size:14px;color:#e2efed}
+.steps b{color:#ffb49f;margin-right:4px}
+@media(max-width:760px){.top{grid-template-columns:minmax(0,1fr)}}
+main{max-width:1240px;margin:0 auto;padding:28px max(5vw,16px) 60px}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.q{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.q h3{font-size:18px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:4px}
+.n{font:700 14px Sora,sans-serif;color:var(--coral)}
+.req{font:600 13px Figtree,sans-serif;color:var(--sub)}
+.hint{color:var(--sub);font-size:14px;margin:4px 0 10px}
+label.f{display:block;font-weight:600;margin:14px 0 4px}
+label.f:first-of-type{margin-top:6px}
+label.f small{font-weight:400;color:var(--sub)}
+input[type=text],textarea,select{width:100%;font:16px Figtree,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:9px 14px;min-height:44px;cursor:pointer;background:var(--bg)}
+.chips label:has(input:checked){border-color:var(--teal2);background:var(--soft)}
+.chips input{accent-color:var(--teal2);width:18px;height:18px}
+.chips span small{display:block;color:var(--sub);font-size:13px}
+.panel{position:sticky;top:16px}
+@media(max-width:900px){.panel{position:static}}
+.ticket{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.band{background:var(--teal);color:#eef6f5;padding:14px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.band h2{font-size:20px}
+.meter{font:600 14px Figtree,sans-serif;border-radius:999px;padding:4px 12px;background:rgba(255,255,255,.14);white-space:nowrap}
+.stub{border-top:2px dashed var(--line);margin:0 14px}
+.checks{list-style:none;margin:0;padding:14px 20px 4px}
+.checks li{display:flex;gap:10px;align-items:flex-start;margin:0 0 8px;font-size:15px}
+.checks i{font-style:normal;font-weight:700;flex:none;width:20px;text-align:center}
+.checks .ok i{color:var(--ok)}.checks .todo i{color:var(--warn)}.checks .need i{color:var(--coral)}
+pre{margin:0 20px;overflow-x:auto;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;font:14px/1.5 ui-monospace,Menlo,monospace;max-height:420px}
+.btns{display:flex;flex-wrap:wrap;gap:10px;padding:14px 20px 18px;align-items:center}
+button,.btn{font:600 16px Figtree,sans-serif;min-height:44px;padding:0 18px;border-radius:10px;border:0;background:var(--teal2);color:light-dark(#fff,#0b1416);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button.ghost,.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.note{color:var(--sub);font-size:14px}
+.okmsg{color:var(--ok);font-weight:600;font-size:14px}
+.redirect{background:var(--soft);border-radius:12px;padding:12px 14px;margin-top:10px;font-size:15px}
+a{color:var(--teal2)}
+.why{max-width:1240px;margin:0 auto;padding:0 max(5vw,16px) 50px}
+.why details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.why summary{cursor:pointer;font:700 17px Sora,sans-serif;min-height:30px}
+.why ul{margin:10px 0 0;padding-left:20px}.why li{margin:6px 0;max-width:75ch}
+@media(prefers-reduced-motion:no-preference){.meter{transition:background .25s}}
+</style></head><body>
+<header><div class="top">
+ <div><h1>Request Builder</h1><p>Turn a request for any of your projects into a clear brief for Claude. A clear brief means fewer questions, less re-reading and a smaller job, so each request uses less of your API budget.</p></div>
+ <ol class="steps" aria-label="How it works"><li><b>1</b>Fill in the order</li><li><b>2</b>Fix what the ticket flags</li><li><b>3</b>Copy it or open a GitHub issue</li></ol>
+</div></header>
+<main><div class="grid">
+<form id="f" autocomplete="off">
+ <div class="q"><h3><span class="n">1</span> Which project? <span class="req">required</span></h3>
+  <div class="chips" id="projects"></div><div id="redirect"></div></div>
+ <div class="q"><h3><span class="n">2</span> What kind of request? <span class="req">required</span></h3>
+  <div class="chips" id="types"></div></div>
+ <div class="q"><h3><span class="n">3</span> In one sentence <span class="req">required</span></h3>
+  <p class="hint">What you want, not how. "Lock 12's plate loses its letters on a phone", not "fix the locks".</p>
+  <input type="text" id="summary" placeholder="e.g. Lock 12's plate loses its letters on a phone">
+  <label class="f" for="area">Where in the project <small>(optional, but it saves a search)</small></label><select id="area"></select></div>
+ <div class="q" id="detailbox" hidden><h3><span class="n">4</span> <span id="detailtitle">Details</span></h3><div id="details"></div></div>
+ <div class="q"><h3><span class="n">5</span> How big a job? </h3>
+  <p class="hint">This sets how far Claude may go. Smaller jobs use less.</p><div class="chips" id="effort"></div>
+  <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
+  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"></div>
+</form>
+<aside class="panel">
+ <div class="ticket">
+  <div class="band"><h2>The ticket</h2><span class="meter" id="meter">Not started</span></div>
+  <ul class="checks" id="checks" aria-live="polite"></ul>
+  <div class="stub"></div>
+  <p class="note" style="padding:12px 20px 0;margin:0">This is what Claude receives. Edit the form, not the ticket.</p>
+  <pre id="out" style="margin-top:10px"></pre>
+  <div class="btns"><button type="button" id="copy">Copy ticket</button><a class="btn ghost" id="issue" href="#" aria-disabled="true">Open as GitHub issue</a><button type="button" class="ghost" id="reset">Start over</button><span class="okmsg" id="copied" hidden>Copied</span></div>
+ </div>
+</aside>
+</div></main>
+<section class="why"><details><summary>Why these fields save API usage</summary><ul>
+ <li><b>One sentence and a type</b> tell Claude what is being asked straight away, so no turn is spent on clarifying questions. Every extra turn re-reads the whole conversation.</li>
+ <li><b>Where in the project</b> points Claude at the right file, so it doesn't search the repo first.</li>
+ <li><b>Done when</b> sets a finish line, so the work stops when it's met instead of polishing.</li>
+ <li><b>How big a job</b> and <b>Leave alone</b> stop changes from spreading into refactors you didn't ask for.</li>
+ <li><b>Before you start</b> on the ticket tells Claude which project notes to read. They hold the decisions already made, so nothing gets worked out twice.</li>
+ <li><b>One request per ticket</b> keeps each job small and easy to check. The ticket flags a summary that looks like two requests.</li>
+</ul></details></section>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let PROJECTS=[];
+const TYPES={
+ bug:{label:'Something is broken',sub:'it worked, or should work, and doesn’t',title:'What happens',fields:[
+  ['steps','Steps to see it','textarea','1. Open the game\n2. Solve Prop 1\n3. Open lock 12 on a phone',true,'One step per line.'],
+  ['expected','What should happen','text','The letters stay on the plate',true],
+  ['actual','What happens instead','text','The letters vanish after the first cut',true],
+  ['device','Device and browser','text','iPhone 13, Safari',false],
+  ['often','How often','select',['','Every time','Sometimes','Once'],false]]},
+ feature:{label:'Change or add a feature',sub:'something new, or different',title:'What you want',fields:[
+  ['want','What should happen','textarea','When the learner opens a chest, coins fly into the counter',true,'Describe it from the user’s side.'],
+  ['why','Who it helps, and why','text','Makes the reward feel real',false],
+  ['done','Done when','textarea','Coins animate from chest to counter\nThe counter adds them up\nWorks on a phone',true,'One check per line. This is the finish line.']]},
+ content:{label:'New content',sub:'a proposition, plant, item, entry…',title:'The content',fields:[
+  ['kind','Kind of content','select',[],true],
+  ['item','Which one','text','Proposition 49, Rosemary, Silver Chalice',true],
+  ['source','What to follow','text','Fitzpatrick’s translation; USDA PLANTS; GAME_DESIGN.md table',false,'The source of truth for the facts.'],
+  ['include','It must include','textarea','Figure, steps, win message',false],
+  ['done','Done when','textarea','Shows on the home page\nPasses the solve test',false]]},
+ research:{label:'Research',sub:'find out, compare, check facts',title:'The question',fields:[
+  ['question','What to find out','textarea','Which hardiness zones can grow rosemary outdoors?',true],
+  ['depth','How deep','select',['outline: the main facts, 1–2 sources','standard: checked against several sources','deep: measurements, variation, exceptions'],false],
+  ['prefer','Sources to prefer or avoid','text','Extension services first; no forums',false],
+  ['output','Where the answer goes','select',['A short answer only','A note in the repo','A data change in the project'],false]]},
+ question:{label:'A question',sub:'about how something works',title:'The question',fields:[
+  ['question','Your question','textarea','Why does the map show greenhouses between some halls and not others?',true],
+  ['context','What you already know or tried','textarea','',false]]}};
+const EFFORT=[['quick','Quick','the smallest change that works; one or two files; no clean-ups'],['normal','Normal','what the request needs, and tests or checks for it'],['thorough','Thorough','may touch several files; update docs and notes too']];
+const VAGUE=/\b(fix it|make it better|nicer|improve|stuff|things|etc\.?|somehow|properly|as needed|asap|everything)\b/i;
+let proj='',type='',effort='normal';
+function chips(box,name,items,cur,on){box.innerHTML=items.map(([v,l,s])=>`<label><input type="radio" name="${name}" value="${esc(v)}" ${v===cur?'checked':''}><span>${esc(l)}${s?`<small>${esc(s)}</small>`:''}</span></label>`).join('');box.querySelectorAll('input').forEach(i=>i.onchange=()=>on(i.value))}
+function P(){return PROJECTS.find(p=>p.id===proj)}
+function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.repo]),proj,v=>{proj=v;renderArea();renderDetails();update()})}
+function renderTypes(){chips($('types'),'type',Object.entries(TYPES).map(([k,t])=>[k,t.label,t.sub]),type,v=>{type=v;renderDetails();update()})}
+function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;update()})}
+function renderArea(){const p=P(),keep=$('area').value;$('area').innerHTML='<option value="">Not sure</option>'+(p?p.areas.map(a=>`<option ${a===keep?'selected':''}>${esc(a)}</option>`).join(''):'')+'<option value="Other">Other (say in the details)</option>'}
+const vals={};
+function renderDetails(){const t=TYPES[type],box=$('details');$('detailbox').hidden=!t;if(!t)return;$('detailtitle').textContent=t.title;
+ box.innerHTML=t.fields.map(([k,l,kind,ph,req,help])=>{const id='d-'+k,v=vals[type+k]||'';let opts=ph;if(k==='kind')opts=['',...((P()&&P().content)||[])];
+  const input=kind==='textarea'?`<textarea id="${id}" placeholder="${esc(ph)}">${esc(v)}</textarea>`:kind==='select'?`<select id="${id}">${opts.map(o=>`<option ${o===v?'selected':''} value="${esc(o)}">${esc(o||'Choose…')}</option>`).join('')}</select>`:`<input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v)}">`;
+  return`<label class="f" for="${id}">${esc(l)} ${req?'':'<small>(optional)</small>'}</label>${help?`<p class="hint">${esc(help)}</p>`:''}${input}`}).join('');
+ box.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{vals[type+el.id.slice(2)]=el.value;update()}))}
+const get=k=>(vals[type+k]||'').trim();
+const lines=s=>s.split('\n').map(x=>x.replace(/^\s*(\d+[.)]|[-*•])\s*/,'').trim()).filter(Boolean);
+/* the readiness checks: what makes a brief cheap to act on */
+function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words=sum?sum.split(/\s+/).length:0;
+ out.push(proj?['ok','Project chosen']:['need','Choose the project']);
+ out.push(type?['ok','Request type chosen']:['need','Choose what kind of request it is']);
+ if(!sum)out.push(['need','Write the one-sentence summary']);
+ else if(words<4)out.push(['todo','The summary is very short: say what and where']);
+ else if(words>30)out.push(['todo','The summary is long: move the detail into the fields below']);
+ else out.push(['ok','Summary is a good length']);
+ if(sum&&(/;|\b(also|too|plus)\b/i.test(sum)||/\band (also )?(fix|add|change|make|update|remove|move|rename|delete|build)\b/i.test(sum)||(sum.match(/\band\b/gi)||[]).length>1))out.push(['todo','This may be two requests. One per ticket keeps each job small']);
+ const all=[sum,...(t?t.fields.map(f=>get(f[0])):[])].join(' ');if(VAGUE.test(all))out.push(['todo',`"${all.match(VAGUE)[0]}" is vague: say exactly what should change`]);
+ if(t){const miss=t.fields.filter(f=>f[4]&&!get(f[0])).map(f=>f[1].toLowerCase());if(miss.length)out.push(['need','Fill in: '+miss.join(', ')]);else out.push(['ok','Required details are filled in']);
+  if(type==='bug'&&get('steps')&&lines(get('steps')).length<2)out.push(['todo','Add the steps one per line, from opening the page']);
+  if(type==='bug'&&get('expected')&&get('expected')===get('actual'))out.push(['todo','Expected and actual are the same']);
+  if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
+  if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
+ if(!$('area').value&&proj&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
+ return out}
+function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),L=[];
+ L.push(`# ${t?'['+t.label+'] ':''}${sum||'(summary)'}`,'');
+ L.push(`Project: ${p?`${p.name} (${p.repo}) ${p.site}`:'(choose)'}`);if($('area').value)L.push(`Area: ${$('area').value}`);
+ L.push(`Effort: ${e[1]}: ${e[2]}`,'');
+ if(t){L.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){L.push(`${l}:`);lines(v).forEach((x,i)=>L.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else L.push(`${l}: ${v}`)}L.push('')}
+ const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){L.push('## Done when');done.forEach(x=>L.push(`- [ ] ${x}`));L.push('')}
+ const leave=lines($('leave').value);if(leave.length){L.push('## Leave alone');leave.forEach(x=>L.push(`- ${x}`));L.push('')}
+ if($('links').value.trim())L.push(`Links: ${$('links').value.trim()}`,'');
+ L.push('## Before you start');if(p)L.push(`- Read ${p.docs.join(', ')} in ${p.repo} first: they record the decisions already made.`);
+ L.push('- Work on this request only. Ask at most one question, and only if you are blocked.');
+ if(effort==='quick')L.push('- Keep the change as small as possible. No refactors or clean-ups.');
+ L.push('- When done: say what changed and how you checked it.');return L.join('\n')}
+function update(){const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
+ $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
+ $('meter').textContent=!proj&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
+ $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
+ const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;
+ const issue=$('issue');if(ready){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
+ $('redirect').innerHTML=p&&p.artBuilder&&type==='content'?`<div class="redirect">New art? The <a href="${esc(p.artBuilder)}">Art Asset Builder</a> checks the research library and can draw known subjects with no AI at all.</div>`:'';
+ save()}
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({proj,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');proj=d.proj||'';type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';return d}catch(e){return{}}}
+['summary','leave','links'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
+$('f').addEventListener('submit',e=>e.preventDefault());
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
+$('reset').addEventListener('click',()=>{proj='';type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+function start(list){PROJECTS=list;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();update()}
+fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
+}
+</script>
+</body></html>

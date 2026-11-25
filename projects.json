@@ -1,0 +1,30 @@
+[
+ {
+  "id": "euclid",
+  "name": "Euclid game",
+  "repo": "fenw1ck/euclid",
+  "site": "https://fenw1ck.github.io/euclid/",
+  "docs": ["NOTES.md", "GAME_DESIGN.md"],
+  "areas": ["Home page proofs (index.html)", "Proof data (proofs.js)", "Thumbnails (thumbs.js)", "Game: opening scene", "Game: locks and plates", "Game: halls and doors", "Game: greenhouses", "Game: map", "Game: chests, coins and shop", "Game: items and clothes", "Game: music and sound", "Win messages (win-messages.csv)"],
+  "content": ["proposition", "lock", "hall", "item", "great mind (statue plaque)", "song", "win message"]
+ },
+ {
+  "id": "planting-guide",
+  "name": "Planting Guide",
+  "repo": "fenw1ck/Planting-Guide",
+  "site": "https://fenw1ck.github.io/Planting-Guide/",
+  "docs": ["README.md", "roadmap.md", "FACTORS.md"],
+  "areas": ["Planner (2D)", "Garden view (3D)", "Find plants", "Pests & diseases", "Research tab", "Settings and key bindings", "Builds (save, export, import)", "Conditions bar", "Calendar (planned)", "Plant data"],
+  "content": ["plant", "pest or disease", "tool review", "technique", "pair rule (neighbours)"]
+ },
+ {
+  "id": "art-assets",
+  "name": "Art Assets",
+  "repo": "fenw1ck/Art-Assets",
+  "site": "https://fenw1ck.github.io/Art-Assets/",
+  "docs": ["README.md", "research/README.md"],
+  "areas": ["Builder page (index.html)", "Research library (research/)", "plants.js", "containers.js", "garden.js", "core.js", "Tools (research.py, contact-sheet.py)"],
+  "content": ["research entry", "drawing program for a new class"],
+  "artBuilder": "https://fenw1ck.github.io/Art-Assets/"
+ }
+]
