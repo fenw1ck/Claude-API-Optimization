@@ -21,7 +21,9 @@ Every ticket ends with **Before you start**. It names the project notes Claude s
 
 **Art is always saved in Art Assets.** Choosing "art" as the kind of content ticks Art Assets automatically, and the ticket tells Claude to build the art there and copy it into the other projects. With several projects ticked, the GitHub issue opens in Art Assets when art is involved, and otherwise in the first project ticked.
 
-New art goes through the [Art Asset Builder](https://fenw1ck.github.io/Art-Assets/) instead, which can draw known subjects with no AI at all.
+**Art requests are made here too** (25 Nov 2026). The Art Asset Builder was merged in and retired: whenever art is involved, a card asks its questions (where the art will be seen, look notes, states, repeating structure, variation). It looks the subject up in the Art Assets research library (by name, "Which one" or the summary), lets you choose to use the research as it is, fill its gaps or search deeper, and shows a live preview when the engine can already draw it, which may need no Claude at all. The answers go into the ticket as an **Art brief**. The library and the drawing programs (`core.js`, `plants.js`, `containers.js`, `research/index.json`) load from the Art Assets site, so they are always current. The old form is kept at https://fenw1ck.github.io/Art-Assets/builder-archive.html.
+
+**Sources to treat as expert** (optional, every request) lists the books, sites or files Claude should trust over a web search; they go into the ticket under their own heading.
 
 ## Files
 
