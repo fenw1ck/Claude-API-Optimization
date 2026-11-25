@@ -68,6 +68,13 @@ a{color:var(--teal2)}
 .part{border:1px solid var(--line);border-left:4px solid var(--teal2);border-radius:12px;padding:10px 14px 14px;margin:12px 0;background:var(--bg)}.phead{display:flex;justify-content:space-between;align-items:center;gap:10px}.phead b{font-family:Sora,sans-serif}button.small{min-height:36px;padding:0 12px;font-size:14px}
 .parts-links{padding:0 20px 16px;margin:0;list-style:none}.parts-links li{margin:4px 0}
 .openw{background:var(--soft);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}.openw ul{margin:4px 0 6px;padding-left:18px}.openw li{margin:2px 0}.tag{font-size:12px;font-weight:600;border-radius:999px;padding:0 7px;border:1px solid var(--line);margin-right:4px}
+.err{background:light-dark(#fde8e3,#3a1f1a);color:var(--coral);border:1px solid var(--coral);border-radius:10px;padding:8px 12px;margin:8px 0 0;font-size:15px;font-weight:600}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;color:var(--sub);cursor:pointer;background:var(--bg)}.drop.over{border-color:var(--teal2);background:var(--soft)}
+.files{list-style:none;margin:8px 0 0;padding:0}.files li{display:flex;gap:10px;align-items:center;margin:6px 0;flex-wrap:wrap}.files img{width:56px;height:42px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}.files .fi{font-size:26px}
+.tabs{max-width:1240px;margin:0 auto;padding:0 max(5vw,16px);display:flex;gap:4px}.tabs a{color:#cfe3e0;text-decoration:none;padding:10px 16px;border-radius:10px 10px 0 0;font-weight:600;min-height:44px;display:inline-flex;align-items:center}.tabs a[aria-current=page]{background:var(--bg);color:var(--ink)}
+.guide{max-width:1240px;margin:0 auto;padding:28px max(5vw,16px) 60px}.guide h2{font-size:clamp(26px,3.4vw,36px);margin-bottom:8px}.guide h3{font-size:20px;margin:26px 0 8px}.lead{max-width:70ch;color:var(--sub);font-size:17px}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px}.gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}.gcard h3{margin:0 0 6px;font-size:18px}.gcard p{margin:6px 0}
+.steps2 li,.mistakes li{margin:8px 0;max-width:80ch}code{font:14px ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 5px;border-radius:5px}
 .why details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
 .why summary{cursor:pointer;font:700 17px Sora,sans-serif;min-height:30px}
 .why ul{margin:10px 0 0;padding-left:20px}.why li{margin:6px 0;max-width:75ch}
@@ -76,12 +83,12 @@ a{color:var(--teal2)}
 <header><div class="top">
  <div><h1>Request Builder</h1><p>Turn a request for any of your projects into a clear brief for Claude. A clear brief means fewer questions, less re-reading and a smaller job, so each request uses less of your API budget.</p></div>
  <ol class="steps" aria-label="How it works"><li><b>1</b>Fill in the order</li><li><b>2</b>Fix what the ticket flags</li><li><b>3</b>Copy it or open a GitHub issue</li></ol>
-</div></header>
+</div><nav class="tabs" aria-label="Pages"><a href="#">Request Builder</a><a href="#guide">Getting the work back</a></nav></header>
 <main><div class="grid">
 <form id="f" autocomplete="off">
  <div class="q"><h3><span class="n">1</span> Which projects? <span class="req">required</span></h3>
   <p class="hint">Tick every project the work touches. Art made for a project is always saved in Art Assets too.</p>
-  <div class="chips" id="projects"></div><div id="redirect"></div><div id="openwork" aria-live="polite"></div>
+  <div class="chips" id="projects"></div><p class="note" id="defsnote" aria-live="polite"></p><div id="redirect"></div><div id="openwork" aria-live="polite"></div>
   <div id="newbox" hidden><label class="f" for="newname">Name of the new project</label><input type="text" id="newname" placeholder="e.g. Sudoku Tutor">
   <label class="f" for="newwhat">What it is, in a sentence</label><input type="text" id="newwhat" placeholder="e.g. A page that teaches sudoku techniques one at a time">
   <label class="f" for="newrepo">GitHub repo, if you've made one <small>(optional)</small></label><input type="text" id="newrepo" placeholder="fenw1ck/Sudoku-Tutor"></div></div>
@@ -106,11 +113,19 @@ a{color:var(--teal2)}
   <div id="parts"></div>
   <div class="chips" id="keepbox" hidden style="margin-top:6px"><label><input type="checkbox" id="keepart"><span>Keep the art from the last ticket on this one<small id="keeplist"></small></span></label></div>
   <div class="btns" style="padding:4px 0 0"><button type="button" class="ghost" id="addart">This project needs art</button><button type="button" class="ghost" id="addmore">And another thing</button></div></div>
- <div class="q"><h3><span class="n">5</span> How big a job? </h3>
-  <p class="hint">This sets how far Claude may go. Smaller jobs use less.</p><div class="chips" id="effort"></div>
+ <div class="q"><h3><span class="n">5</span> Size check: how big a job? </h3>
+  <p class="hint">How much work you expect, which sets how far Claude may go. Smaller jobs use less. Not sure? Use the button at the bottom.</p><div class="chips" id="effort"></div>
   <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
   <label class="f" for="experts">Sources to treat as expert <small>(optional: books, sites, people or files Claude should trust over a web search)</small></label><input type="text" id="experts" placeholder="e.g. Fitzpatrick's Elements; USDA PLANTS; the Stardew Valley wiki">
-  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"></div>
+  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"><p class="err" id="linkerr" role="alert" hidden></p>
+  <label class="f" for="filein">Screenshots or files <small>(optional; most useful for "Something is broken")</small></label><div class="drop" id="drop" tabindex="0" role="button" aria-label="Add screenshots or files">Drop screenshots or documents here, or <label for="filein" style="text-decoration:underline;cursor:pointer">choose files</label><input type="file" id="filein" multiple hidden></div><p class="hint" style="margin-top:6px">A ticket is text, so the files travel beside it: after <b>Open as GitHub issue</b>, drag them into the issue (GitHub keeps them), or paste them into the chat. Images have a Copy button.</p><ul class="files" id="filelist"></ul>
+  <div class="btns" style="padding:12px 0 0"><button type="button" class="ghost" id="sizebtn">How big is this?</button></div><div id="sizeout" aria-live="polite"></div></div>
+ <div class="q" id="outbox"><h3><span class="n">6</span> How do you want the work back?</h3>
+  <p class="hint">Remembered for every ticket and project unless you untick the box. New to this? See <a href="#guide">Getting the work back</a>.</p>
+  <div class="chips" id="o-how"></div>
+  <label class="f">Formats you can use <small>(optional)</small></label><div class="chips" id="o-fmt"></div>
+  <label class="f" for="o-where">Where it goes <small>(optional: a folder, file, repo or page link)</small></label><input type="text" id="o-where" placeholder="e.g. the repo's top folder; https://github.com/fenw1ck/euclid">
+  <div class="chips" style="margin-top:12px"><label><input type="checkbox" id="o-remember" checked><span>Remember this for every ticket and project<small>untick to use it for this ticket only</small></span></label></div></div>
 </form>
 <aside class="panel">
  <div class="ticket">
@@ -124,6 +139,34 @@ a{color:var(--teal2)}
  </div>
 </aside>
 </div></main>
+<section class="guide" id="guide" hidden>
+ <h2>Getting the work back</h2>
+ <p class="lead">Claude can hand work back in several ways. Pick one in step 6 of the form and it is written into every ticket, so you get the same thing each time and know what to do with it.</p>
+ <div class="gcards">
+  <div class="gcard"><h3>1. A pull request <span class="badge">recommended</span></h3><p>Claude pushes a branch to your GitHub repo and opens a pull request (PR). Nothing changes on your site until you merge it.</p><p><b>You then:</b> open the PR link → <i>Files changed</i> to look → <b>Merge pull request</b> → <b>Confirm merge</b>. GitHub Pages updates a minute or two later.</p><p class="note">Needs a Claude Code session with the repo added, which is how these tickets are done.</p></div>
+  <div class="gcard"><h3>2. Straight to main</h3><p>Claude commits directly to <code>main</code>. Fastest, but there is no review step and no easy undo button.</p></div>
+  <div class="gcard"><h3>3. Files to download</h3><p>Claude sends files you download (HTML, Markdown, code) and says exactly where each one goes.</p><p><b>You then:</b> open the repo on GitHub → <b>Add file → Upload files</b> → drag the files in (into the right folder) → <b>Commit changes</b>.</p></div>
+  <div class="gcard"><h3>4. A published page</h3><p>Claude publishes a page with its own link (good for reports, guides and one-off tools). Nothing to install; share the link.</p></div>
+  <div class="gcard"><h3>5. In the reply</h3><p>Short answers, a snippet or a paragraph to paste somewhere. No files at all.</p></div>
+ </div>
+ <h3>Set up once</h3>
+ <ol class="steps2">
+  <li><b>Connect Claude to GitHub (to read your code in a chat):</b> in Claude, <i>Customize → Connectors → GitHub Integration → Connect</i>. For a private repo, give the Claude GitHub App access to all repos or just the ones you choose. This lets Claude read the files on a branch; it does not push changes.</li>
+  <li><b>To have Claude push branches and open pull requests,</b> use a Claude Code session and add the repo to it (as these tickets do).</li>
+  <li><b>Turn on GitHub Pages so the site shows:</b> in the repo, <i>Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: <code>main</code>, folder <code>/ (root)</code> → Save</i>. From then on, every merge to <code>main</code> publishes. <code>index.html</code> must sit at the top of the repo (or in <code>/docs</code> if you choose that folder).</li>
+ </ol>
+ <h3>Common mistakes</h3>
+ <ul class="mistakes">
+  <li><b>Approved but not merged.</b> A PR does nothing until <b>Merge pull request</b> and then <b>Confirm merge</b> are both clicked. The PR page then shows a purple <i>Merged</i> badge.</li>
+  <li><b>Merged the wrong PR, or out of order.</b> When one PR builds on another, merge the older one first. The PR description says when order matters; the form's step 1 lists what is open.</li>
+  <li><b>Uploaded the .zip itself.</b> GitHub stores a zip as one file. Unzip first (Windows: right-click → <i>Extract All</i>; Mac: double-click), then upload the files inside, not the folder around them.</li>
+  <li><b>Files in the wrong folder.</b> Upload into the folder the reply names; the page breaks if <code>index.html</code> or the files it loads end up one level too deep.</li>
+  <li><b>Pages set to the wrong branch</b>, or not turned on: the site never changes. Check <i>Settings → Pages</i>.</li>
+  <li><b>The old page still shows.</b> Wait a minute after merging, then reload without the cache (Ctrl+Shift+R, or Cmd+Shift+R on a Mac).</li>
+  <li><b>Editing on GitHub while a PR is open</b> can clash with it. Merge or close open PRs first.</li>
+ </ul>
+ <p class="note">Sources: Claude help, <a href="https://claude.com/docs/connectors/github">GitHub integration</a>; GitHub Docs, <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site">configuring a publishing source for GitHub Pages</a>.</p>
+</section>
 <section class="why"><details><summary>Why these fields save API usage</summary><ul>
  <li><b>One sentence and a type</b> tell Claude what is being asked straight away, so no turn is spent on clarifying questions. Every extra turn re-reads the whole conversation.</li>
  <li><b>Where in the project</b> points Claude at the right file, so it doesn't search the repo first.</li>
@@ -142,6 +185,7 @@ let PROJECTS=[];
 const TYPES={
  bug:{label:'Something is broken',sub:'it worked, or should work, and doesn’t',title:'What happens',fields:[
   ['steps','Steps to see it','textarea','1. Open the game\n2. Solve Prop 1\n3. Open lock 12 on a phone',true,'One step per line.'],
+  ['where','Where exactly','text','Proposition 6, step 4; the bedroom off hall 3; the Copy button',false,'The proposition, step, room or button: fewer searches.'],
   ['expected','What should happen','text','The letters stay on the plate',true],
   ['actual','What happens instead','text','The letters vanish after the first cut',true],
   ['device','Device and browser','text','iPhone 13, Safari',false],
@@ -174,9 +218,9 @@ const artInvolved=()=>projs.includes(ART)||get('kind')===ARTKIND;
 function P(){const ps=PS();return artInvolved()?(ps.find(p=>p.id===ART)||ps[0]):ps[0]}
 function ensureArt(){if(!projs.includes(ART)){projs.push(ART);artAdded=true;renderProjects();renderArea()}}let artAdded=false;
 function X(p){if(p&&p.isNew){const r=$('newrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');return Object.assign({},p,{name:'New project: '+($('newname').value.trim()||'(name)'),repo:r})}return p}
-function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),projs,(v,on)=>{projs=on?[...projs.filter(x=>x!==v),v]:projs.filter(x=>x!==v);if(v===ART&&!on)artAdded=false;renderArea();renderDetails();update()},true)}
+function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),projs,(v,on)=>{projs=on?[...projs.filter(x=>x!==v),v]:projs.filter(x=>x!==v);if(v===ART&&!on)artAdded=false;renderArea();if(on)applyDefs(v);renderDetails();update()},true)}
 function renderTypes(){chips($('types'),'type',Object.entries(TYPES).map(([k,t])=>[k,t.label,t.sub]),type,v=>{type=v;renderDetails();update()})}
-function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;update()})}
+function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;effortTouched=true;update()})}
 function renderNew(){$('newbox').hidden=!projs.includes('new')}
 function renderArea(){renderNew();const ps=PS(),keep=$('area').value,one=ps.length===1;$('area').innerHTML='<option value="">Not sure</option>'+ps.filter(p=>p.areas.length).map(p=>{const o=p.areas.map(a=>{const v=one?a:`${p.name}: ${a}`;return`<option value="${esc(v)}" ${v===keep?'selected':''}>${esc(a)}</option>`}).join('');return one?o:`<optgroup label="${esc(p.name)}">${o}</optgroup>`}).join('')+'<option value="Other">Other (say in the details)</option>'}
 const vals={};
@@ -204,7 +248,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
  if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
- partChecks(out);if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
+ partChecks(out);if(badLinks().length)out.push(['need','Fix the link: '+badLinks().join(', ')]);if(type==='bug'&&!FILES.length&&!$('links').value.trim())out.push(['todo','Add a screenshot or a link: it saves guessing']);if(effort==='quick'){const z=sizeOf();if(z.done>=5||z.np>1||z.parts)out.push(['todo',`Size check: Quick, but ${[z.done>=5&&z.done+' "Done when" lines',z.np>1&&z.np+' projects',z.parts&&(z.parts+1)+' tickets'].filter(Boolean).join(' and ')}. Try "How big is this?"`])}if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
@@ -213,11 +257,13 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const body=[];if(t){body.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){body.push(`${l}:`);lines(v).forEach((x,i)=>body.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else body.push(`${l}: ${v}`)}body.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){body.push('## Done when');done.forEach(x=>body.push(`- [ ] ${x}`));body.push('')}
  artBrief(body);
+ if(FILES.length){body.push('## Screenshots and files','Added beside this ticket (in the GitHub issue or the chat):');FILES.forEach(f=>body.push(`- ${f.name} (${kb(f.size)})`));body.push('')}
  const tail=[];const ex=$('experts').value.trim();if(ex){tail.push('## Sources to treat as expert');ex.split(/;|\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>tail.push(`- ${x}`));tail.push('')}
- keepLines(tail);
+ keepLines(tail);outLines(tail);
  const leave=lines($('leave').value);if(leave.length){tail.push('## Leave alone');leave.forEach(x=>tail.push(`- ${x}`));tail.push('')}
  if($('links').value.trim())tail.push(`Links: ${$('links').value.trim()}`,'');
  tail.push('## Before you start');for(const q of ps){if(q.isNew)tail.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else tail.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
+ for(const q of ps)if(!q.isNew&&q.docs&&q.docs.length)tail.push(`- Claude keeps no memory between requests: ${q.docs[0]} in ${q.repo} is the memory. When this work settles something later requests will need (a decision, a rule, where a thing lives), record it there.`);
  for(const r of openRepos()){const prs=openPRs(r);if(prs.length)tail.push(`- Open pull requests in ${r}, not merged yet: ${prs.map(x=>`#${x.n} "${x.t}"`).join(', ')}. If this work builds on one of them, branch from it; otherwise branch from main.`)}
  if((artInvolved()&&!artSkip())||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  if(bundle)tail.push(`- This is a bundle of ${n} tickets that share this context. Do them in order, one at a time: finish a ticket, say what changed and how you checked it, then start the next. A later ticket may build on an earlier one.`);
@@ -238,15 +284,15 @@ function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='n
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
  const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML='';renderKeep();renderOpen();renderArt();refreshParts();
+ $('redirect').innerHTML='';renderLinkErr();renderKeep();renderOpen();renderArt();refreshParts();
  const pl=$('partlinks');if(PARTS.length&&ready){const artP=PROJECTS.find(q=>q.id===ART),items=[[0,P()],...PARTS.map((pt,i)=>[i+1,pt.kind==='art'&&artP?artP:P()])];pl.innerHTML='<li class="note">Or open each ticket as its own issue:</li>'+items.map(([k,q])=>{if(!q||!q.repo)return'';const tx=ticket(k),ti=tx.split('\n')[0].replace(/^#\s*/,'');return`<li><a href="https://github.com/${q.repo}/issues/new?title=${encodeURIComponent(ti)}&body=${encodeURIComponent(tx.split('\n').slice(2).join('\n'))}" target="_blank" rel="noopener">Ticket ${k+1} of ${PARTS.length+1}: ${esc(ti)}</a> <small class="note">(${esc(q.repo)})</small></li>`}).join('')}else pl.innerHTML='';
  save()}
-function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,askip:$('a-skip').checked,keep:$('keepart').checked,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,out:OUT,askip:$('a-skip').checked,keep:$('keepart').checked,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
 function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';$('experts').value=d.experts||'';PARTS=Array.isArray(d.parts)?d.parts:[];$('a-skip').checked=!!d.askip;$('keepart').checked=!!d.keep;artLoad(d);['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
 ['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{if(!OUT.remember){OUT={how:'',formats:[],where:'',remember:true}}renderOut();FILES.forEach(f=>f.url&&URL.revokeObjectURL(f.url));FILES=[];renderFiles();effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 /* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
    The research library and the drawing programs load from the Art Assets site, so they are always current;
    when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
@@ -361,7 +407,62 @@ document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlin
 function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;
  if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
  history.replaceState(null,'',location.pathname);renderProjects();renderTypes();renderArea();renderDetails()}
-function start(list){PROJECTS=list;started=true;const d=load();improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
+/* ---- size check (25 Nov 2026): "How big is this?" weighs what the form holds and suggests a job size;
+   the ticket also flags a Quick job that looks bigger. ---- */
+function sizeOf(){const t=TYPES[type],done=(t&&t.fields.some(f=>f[0]==='done')?lines(get('done')).length:0)+PARTS.reduce((a,pt)=>a+lines(pt.done||'').length,0),np=PS().length,parts=PARTS.length,
+  text=t?t.fields.map(f=>get(f[0])).join(' '):'',words=text.split(/\s+/).filter(Boolean).length,art=(artInvolved()&&!artSkip())||bundleArt(),why=[];
+ let sc=0;if(done){sc+=done;why.push(`${done} "Done when" line${done>1?'s':''}`)}if(np>1){sc+=2*(np-1);why.push(`${np} projects`)}if(parts){sc+=3*parts;why.push(`${parts+1} tickets in the bundle`)}
+ if(art){sc+=2;why.push('new art (research, drawing, checking)')}if(words>80){sc+=2;why.push('a long description')}if(type==='research'||type==='question'){sc-=1}
+ return{size:sc<=3?'quick':sc<=8?'normal':'thorough',why,done,np,parts}}
+function sizeShow(){const z=sizeOf(),e=EFFORT.find(x=>x[0]===z.size);$('sizeout').innerHTML=`<div class="redirect"><b>Looks ${esc(e[1])}</b>: ${esc(e[2])}. ${z.why.length?'Because of '+esc(z.why.join(', '))+'.':'Not much is asked yet.'} ${z.size===effort?'That is what you have.':`<button type="button" class="ghost small" id="sizeuse">Use ${esc(e[1])}</button>`}</div>`;
+ const u=$('sizeuse');if(u)u.onclick=()=>{effort=z.size;renderEffort();update();sizeShow()}}
+$('sizebtn').addEventListener('click',sizeShow);
+/* ---- reuse answers (25 Nov 2026): each project's usual job size, area, things to leave alone and expert sources
+   are saved when a ticket is copied or opened, and fill the empty fields next time that project is ticked. ---- */
+const getDefs=()=>{try{return JSON.parse(localStorage.getItem('rb-projdefaults')||'{}')}catch(e){return{}}};
+function saveDefs(){const D=getDefs(),one=projs.length===1;projs.forEach(id=>{D[id]=Object.assign(D[id]||{},{effort,leave:$('leave').value,experts:$('experts').value},one&&$('area').value?{area:$('area').value}:{})});try{localStorage.setItem('rb-projdefaults',JSON.stringify(D))}catch(e){}}
+function applyDefs(id){const d=getDefs()[id];if(!d)return;const used=[];
+ if(d.leave&&!$('leave').value.trim()){$('leave').value=d.leave;used.push('things to leave alone')}
+ if(d.experts&&!$('experts').value.trim()){$('experts').value=d.experts;used.push('expert sources')}
+ if(d.area&&!$('area').value&&projs.length===1&&[...$('area').options].some(o=>o.value===d.area)){$('area').value=d.area;used.push('area')}
+ if(d.effort&&d.effort!==effort&&!effortTouched){effort=d.effort;renderEffort();used.push('job size')}
+ const n=PROJECTS.find(p=>p.id===id);$('defsnote').textContent=used.length?`Filled from your last ${n?n.name:id} ticket: ${used.join(', ')}. Change anything that doesn't fit.`:''}
+let effortTouched=false;
+document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))saveDefs()},true);
+/* ---- files and links (25 Nov 2026): screenshots or documents dropped here are listed on the ticket (the ticket is
+   text, so the files themselves go into the GitHub issue or the chat; images have a Copy button for pasting).
+   Links must look like web addresses (www.example.com or https://…), or the ticket is held until they do. ---- */
+let FILES=[];
+const URLRE=/^(https?:\/\/)?(www\.)?([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?([\/?#]\S*)?$/i;
+const badLinks=()=>$('links').value.split(/\s+|,\s+|;\s*/).map(x=>x.trim().replace(/[.)]+$/,'')).filter(Boolean).filter(x=>!URLRE.test(x));
+function renderLinkErr(){const b=badLinks();$('linkerr').hidden=!b.length;$('linkerr').textContent=b.length?`${b.length>1?'These don’t':'This doesn’t'} look like a web address: ${b.join(', ')}. Use dots and no spaces, like www.example.com or https://github.com/fenw1ck/euclid.`:''}
+const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+function addFiles(list){for(const f of list){if(FILES.some(x=>x.name===f.name&&x.size===f.size))continue;FILES.push({name:f.name,size:f.size,type:f.type,file:f,url:f.type.startsWith('image/')?URL.createObjectURL(f):''})}renderFiles();update()}
+function renderFiles(){$('filelist').innerHTML=FILES.map((f,i)=>`<li>${f.url?`<img src="${f.url}" alt="">`:'<span class="fi">📄</span>'}<span>${esc(f.name)} <small class="note">${kb(f.size)}</small></span>${f.url?`<button type="button" class="ghost small" data-copy="${i}">Copy image</button>`:''}<button type="button" class="ghost small" data-rmf="${i}">Remove</button></li>`).join('');
+ $('filelist').querySelectorAll('[data-rmf]').forEach(b=>b.onclick=()=>{const f=FILES.splice(+b.dataset.rmf,1)[0];if(f.url)URL.revokeObjectURL(f.url);renderFiles();update()});
+ $('filelist').querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const f=FILES[+b.dataset.copy];try{const png=f.type==='image/png'?f.file:await new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);c.toBlob(res,'image/png')};im.src=f.url});await navigator.clipboard.write([new ClipboardItem({'image/png':png})]);b.textContent='Copied'}catch(e){b.textContent='Can’t copy here'}setTimeout(()=>b.textContent='Copy image',1800)})}
+const dz=$('drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',e=>addFiles(e.dataTransfer.files));$('filein').addEventListener('change',e=>{addFiles(e.target.files);e.target.value=''});
+dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('filein').click()}});
+/* ---- getting the work back (25 Nov 2026): how Claude should deliver, remembered across tickets and projects
+   (unless "Remember" is unticked), and a guide tab (#guide) on the ways Claude gives output and how to bring it in. ---- */
+const DELIVER={pr:['A pull request in my GitHub repo','I review it and click Merge (recommended)','Push a branch and open a pull request in the project\'s repo; I review and merge it. Give me the PR link and anything I must do after merging (for example, turn on GitHub Pages).'],
+ main:['Straight to main','no review step','Commit straight to main in the project\'s repo.'],
+ files:['Files to download','I upload them to GitHub myself','Send the files to download, one by one (no .zip), and say the exact folder and file name each one goes to in the repo.'],
+ page:['A published page with a link','for reports, guides, one-off tools','Publish it as a page and give me the link.'],
+ reply:['In the chat reply','short answers or snippets','Answer in the chat; no files.']};
+const FORMATS=['HTML','Markdown (.md)','The project\'s own file types'];
+let OUT={how:'',formats:[],where:'',remember:true};
+function renderOut(){chips($('o-how'),'o-how',Object.entries(DELIVER).map(([k,v])=>[k,v[0],v[1]]),OUT.how,v=>{OUT.how=v;outSave();update()});
+ chips($('o-fmt'),'o-fmt',FORMATS.map(f=>[f,f]),OUT.formats,(v,on)=>{OUT.formats=on?[...OUT.formats.filter(x=>x!==v),v]:OUT.formats.filter(x=>x!==v);outSave();update()},true);
+ $('o-where').value=OUT.where;$('o-remember').checked=OUT.remember}
+function outSave(){OUT.where=$('o-where').value;OUT.remember=$('o-remember').checked;try{if(OUT.remember)localStorage.setItem('rb-output',JSON.stringify(OUT));else localStorage.removeItem('rb-output')}catch(e){}}
+function outLoad(d){let o=null;try{o=JSON.parse(localStorage.getItem('rb-output')||'null')}catch(e){}if(o)OUT=Object.assign(OUT,o);else if(d&&d.out)OUT=Object.assign(OUT,d.out);renderOut()}
+function outLines(L){if(!OUT.how&&!OUT.formats.length&&!OUT.where.trim())return;L.push('## How to give the work back');if(OUT.how)L.push(`- ${DELIVER[OUT.how][2]}`);if(OUT.formats.length)L.push(`- Formats I can use: ${OUT.formats.join(', ')}.`);if(OUT.where.trim())L.push(`- Where it goes: ${OUT.where.trim()}`);if(OUT.remember)L.push('- This is my standing preference for every project unless a ticket says otherwise.');L.push('')}
+$('o-where').addEventListener('input',()=>{outSave();update()});$('o-remember').addEventListener('change',()=>{outSave();update()});
+function showTab(){const g=location.hash==='#guide';$('guide').hidden=!g;document.querySelector('main').hidden=g;document.querySelector('.why').hidden=g;document.querySelectorAll('.tabs a').forEach(a=>a.setAttribute('aria-current',(a.getAttribute('href')==='#guide')===g?'page':'false'))}
+addEventListener('hashchange',showTab);showTab();
+function start(list){PROJECTS=list;started=true;const d=load();outLoad(d);improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
 </script>
