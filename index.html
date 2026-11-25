@@ -67,6 +67,7 @@ a{color:var(--teal2)}
 .prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}.prev figure{margin:0;border:1px solid var(--line);border-radius:12px;padding:6px;background:var(--bg)}.prev canvas{width:100%;height:150px;display:block}.prev figcaption{font-size:13px;color:var(--sub);text-align:center}
 .part{border:1px solid var(--line);border-left:4px solid var(--teal2);border-radius:12px;padding:10px 14px 14px;margin:12px 0;background:var(--bg)}.phead{display:flex;justify-content:space-between;align-items:center;gap:10px}.phead b{font-family:Sora,sans-serif}button.small{min-height:36px;padding:0 12px;font-size:14px}
 .parts-links{padding:0 20px 16px;margin:0;list-style:none}.parts-links li{margin:4px 0}
+.openw{background:var(--soft);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}.openw ul{margin:4px 0 6px;padding-left:18px}.openw li{margin:2px 0}.tag{font-size:12px;font-weight:600;border-radius:999px;padding:0 7px;border:1px solid var(--line);margin-right:4px}
 .why details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
 .why summary{cursor:pointer;font:700 17px Sora,sans-serif;min-height:30px}
 .why ul{margin:10px 0 0;padding-left:20px}.why li{margin:6px 0;max-width:75ch}
@@ -80,7 +81,7 @@ a{color:var(--teal2)}
 <form id="f" autocomplete="off">
  <div class="q"><h3><span class="n">1</span> Which projects? <span class="req">required</span></h3>
   <p class="hint">Tick every project the work touches. Art made for a project is always saved in Art Assets too.</p>
-  <div class="chips" id="projects"></div><div id="redirect"></div>
+  <div class="chips" id="projects"></div><div id="redirect"></div><div id="openwork" aria-live="polite"></div>
   <div id="newbox" hidden><label class="f" for="newname">Name of the new project</label><input type="text" id="newname" placeholder="e.g. Sudoku Tutor">
   <label class="f" for="newwhat">What it is, in a sentence</label><input type="text" id="newwhat" placeholder="e.g. A page that teaches sudoku techniques one at a time">
   <label class="f" for="newrepo">GitHub repo, if you've made one <small>(optional)</small></label><input type="text" id="newrepo" placeholder="fenw1ck/Sudoku-Tutor"></div></div>
@@ -201,7 +202,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
  if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
- partChecks(out);
+ partChecks(out);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
@@ -214,6 +215,7 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const leave=lines($('leave').value);if(leave.length){tail.push('## Leave alone');leave.forEach(x=>tail.push(`- ${x}`));tail.push('')}
  if($('links').value.trim())tail.push(`Links: ${$('links').value.trim()}`,'');
  tail.push('## Before you start');for(const q of ps){if(q.isNew)tail.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else tail.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
+ for(const r of openRepos()){const prs=openPRs(r);if(prs.length)tail.push(`- Open pull requests in ${r}, not merged yet: ${prs.map(x=>`#${x.n} "${x.t}"`).join(', ')}. If this work builds on one of them, branch from it; otherwise branch from main.`)}
  if(artInvolved()||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  if(bundle)tail.push(`- This is a bundle of ${n} tickets that share this context. Do them in order, one at a time: finish a ticket, say what changed and how you checked it, then start the next. A later ticket may build on an earlier one.`);
  else if(only!=null&&n>1)tail.push(`- This is ticket ${only+1} of ${n} in the bundle "${sum||'(summary)'}". The other tickets: ${[t?'['+t.label+'] '+(sum||''):sum,...PARTS.map(partTitle)].filter((x,i)=>i!==only).map(x=>`"${x}"`).join(', ')}. Do only this one.`);
@@ -233,7 +235,7 @@ function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='n
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
  const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML='';renderArt();refreshParts();
+ $('redirect').innerHTML='';renderOpen();renderArt();refreshParts();
  const pl=$('partlinks');if(PARTS.length&&ready){const artP=PROJECTS.find(q=>q.id===ART),items=[[0,P()],...PARTS.map((pt,i)=>[i+1,pt.kind==='art'&&artP?artP:P()])];pl.innerHTML='<li class="note">Or open each ticket as its own issue:</li>'+items.map(([k,q])=>{if(!q||!q.repo)return'';const tx=ticket(k),ti=tx.split('\n')[0].replace(/^#\s*/,'');return`<li><a href="https://github.com/${q.repo}/issues/new?title=${encodeURIComponent(ti)}&body=${encodeURIComponent(tx.split('\n').slice(2).join('\n'))}" target="_blank" rel="noopener">Ticket ${k+1} of ${PARTS.length+1}: ${esc(ti)}</a> <small class="note">(${esc(q.repo)})</small></li>`}).join('')}else pl.innerHTML='';
  save()}
 function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
@@ -322,6 +324,19 @@ function partChecks(out){PARTS.forEach(pt=>{const n=partLabel(pt);if(pt.kind==='
  if(PARTS.length)out.push(['ok',`Bundle of ${PARTS.length+1} tickets with shared context`])}
 $('addart').addEventListener('click',()=>{PARTS.push({kind:'art',what:'',place:'',look:'',states:'',done:''});renderParts();update();const i=PARTS.length-1;$(`p${i}-what`).focus()});
 $('addmore').addEventListener('click',()=>{PARTS.push({kind:'other',type:'',sum:'',details:'',done:''});renderParts();update();$(`p${PARTS.length-1}-type`).focus()});
+/* ---- what is already open (25 Nov 2026): open pull requests and issues for the ticked projects, from GitHub's
+   public API (60 checks an hour without signing in; one check per repo per page visit). Open pull requests also go
+   into the ticket, so Claude knows which unmerged work a request may build on. ---- */
+const OPEN={};
+const openRepos=()=>[...new Set(PS().filter(p=>p.repo).map(p=>p.repo).concat((artInvolved()||bundleArt())&&PROJECTS.find(q=>q.id===ART)?[PROJECTS.find(q=>q.id===ART).repo]:[]))];
+function loadOpen(repo){if(OPEN[repo])return;OPEN[repo]={loading:true};
+ fetch(`https://api.github.com/repos/${repo}/issues?state=open&per_page=50`,{headers:{Accept:'application/vnd.github+json'}}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(j=>{OPEN[repo]={items:(Array.isArray(j)?j:[]).map(x=>({n:x.number,t:x.title,u:x.html_url,pr:!!x.pull_request,draft:!!x.draft}))};update()}).catch(e=>{OPEN[repo]={err:e===403?'GitHub’s hourly limit was reached; try again later':'GitHub could not be reached'};update()})}
+const openPRs=repo=>((OPEN[repo]||{}).items||[]).filter(x=>x.pr);
+function renderOpen(){const box=$('openwork'),repos=openRepos();repos.forEach(loadOpen);if(!repos.length){box.innerHTML='';return}
+ box.innerHTML=repos.map(r=>{const o=OPEN[r]||{};if(o.loading)return`<div class="openw">Checking what is open in ${esc(r)}…</div>`;if(o.err)return`<div class="openw">${esc(r)}: ${esc(o.err)}.</div>`;
+  const prs=o.items.filter(x=>x.pr),iss=o.items.filter(x=>!x.pr);if(!o.items.length)return`<div class="openw">Nothing open in ${esc(r)}.</div>`;
+  const li=x=>`<li><span class="tag">${x.pr?(x.draft?'draft PR':'PR'):'issue'}</span><a href="${esc(x.u)}" target="_blank" rel="noopener">#${x.n} ${esc(x.t)}</a></li>`;
+  return`<div class="openw"><b>Open in ${esc(r)}:</b> ${prs.length} pull request${prs.length===1?'':'s'}, ${iss.length} issue${iss.length===1?'':'s'}${prs.length?'. Merge pull requests first if this request builds on them; the ticket lists them for Claude.':''}<ul>${prs.concat(iss).map(li).join('')}</ul></div>`}).join('')}
 function start(list){PROJECTS=list;started=true;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
