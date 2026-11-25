@@ -213,7 +213,7 @@ const VAGUE=/\b(fix it|make it better|nicer|improve|stuff|things|etc\.?|somehow|
 let projs=[],type='',effort='normal';const ART='art-assets',ARTKIND='art (drawings, graphics)';
 function chips(box,name,items,cur,on,multi){box.innerHTML=items.map(([v,l,s])=>`<label><input type="${multi?'checkbox':'radio'}" name="${name}" value="${esc(v)}" ${(multi?cur.includes(v):v===cur)?'checked':''}><span>${esc(l)}${s?`<small>${esc(s)}</small>`:''}</span></label>`).join('');box.querySelectorAll('input').forEach(i=>i.onchange=()=>on(i.value,i.checked))}
 function PS(){return projs.map(id=>X(PROJECTS.find(p=>p.id===id))).filter(Boolean)}
-const artInvolved=()=>projs.includes(ART)||get('kind')===ARTKIND;
+const artInvolved=()=>!A.engine&&(projs.includes(ART)||get('kind')===ARTKIND); /* an engine ticket names Art Assets for engine.js, not for art */
 /* the main project: where the issue goes. Art Assets when art is involved, since art is built there */
 function P(){const ps=PS();return artInvolved()?(ps.find(p=>p.id===ART)||ps[0]):ps[0]}
 function ensureArt(){if(!projs.includes(ART)){projs.push(ART);artAdded=true;renderProjects();renderArea()}}let artAdded=false;
@@ -292,7 +292,7 @@ function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');p
 ['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{if(!OUT.remember){OUT={how:'',formats:[],where:'',remember:true}}renderOut();FILES.forEach(f=>f.url&&URL.revokeObjectURL(f.url));FILES=[];renderFiles();effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null,entry:'',card:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{if(!OUT.remember){OUT={how:'',formats:[],where:'',remember:true}}renderOut();FILES.forEach(f=>f.url&&URL.revokeObjectURL(f.url));FILES=[];renderFiles();effortTouched=false;$('defsnote').textContent='';projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null,entry:'',card:null,engine:''});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 /* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
    The research library and the drawing programs load from the Art Assets site, so they are always current;
    when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
@@ -407,7 +407,14 @@ function keepLines(L){const la=lastArt();if(!$('keepart').checked||!la)return;L.
  la.list.forEach(x=>L.push(`- ${x.what}${x.file?`: fenw1ck/Art-Assets ${x.file}`:''}${x.by&&x.by.length?`, drawn by ${x.by.join(', ')}`:''}${x.place?`; seen in ${x.place}`:''}`));L.push('')}
 $('a-skip').addEventListener('change',update);$('keepart').addEventListener('change',update);
 document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))rememberArt()},true);
-function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;const img=location.hash.startsWith('#img=')?decodeURIComponent(location.hash.slice(5)):''; /* from the Art Assets library's Edit: the picture rides in the hash */
+/* from the Art Assets "Game engine" tab (25 Nov 2026): ?engine=<part>&name&what&params&from opens a feature ticket about
+   that part of engine.js, for the Euclid game and Art Assets, with the part's current rules written in. */
+function engineFromURL(){const q=new URLSearchParams(location.search),id=q.get('engine');if(!id)return false;const name=q.get('name')||id;
+ projs=['euclid',ART];type='feature';A.engine=id;$('summary').value=`Improve the game engine: ${name}`;
+ vals.featurewant=`(Say what should change.)\n\nNow (engine.js ENGINE.${id}): ${q.get('what')||''}\nCurrent settings:\n${q.get('params')||''}`;
+ if(q.get('from')&&!$('links').value.trim())$('links').value=q.get('from');history.replaceState(null,'',location.pathname);
+ setTimeout(()=>{const a=[...$('area').options].find(o=>/engine/i.test(o.value));if(a){$('area').value=a.value;update()}},0);return true}
+function improveFromURL(){if(engineFromURL())return;const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;const img=location.hash.startsWith('#img=')?decodeURIComponent(location.hash.slice(5)):''; /* from the Art Assets library's Edit: the picture rides in the hash */
  if(q.get('from')&&!$('links').value.trim())$('links').value=q.get('from');if(img.startsWith('data:image/'))fetch(img).then(r=>r.blob()).then(b=>addFiles([new File([b],id.replace(/[^\w-]/g,'_')+'.png',{type:b.type})])).catch(()=>{});
  if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
  A.entry=q.get('entry')||'';A.parent=q.get('parent')||'';A.card=q.get('branch')||q.get('tags')?{branch:q.get('branch')||'',tags:q.get('tags')||'',drawn:q.get('drawn')||''}:null;

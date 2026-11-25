@@ -20,6 +20,10 @@
    "Game: chests, coins and shop",
    "Game: items and clothes",
    "Game: music and sound",
+   "Game: clock, health, minimap and keys",
+   "Game: combat and creatures",
+   "Game: cooking and kitchens",
+   "Game: traps, ledges and lock timers",
    "Win messages (win-messages.csv)"
   ],
   "content": [
@@ -72,7 +76,8 @@
    "research/README.md"
   ],
   "areas": [
-   "Builder page (index.html)",
+   "Art library page (index.html)",
+   "Game engine (engine.js, engine.html)",
    "Research library (research/)",
    "plants.js",
    "containers.js",
