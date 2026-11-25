@@ -404,7 +404,8 @@ function keepLines(L){const la=lastArt();if(!$('keepart').checked||!la)return;L.
  la.list.forEach(x=>L.push(`- ${x.what}${x.file?`: fenw1ck/Art-Assets ${x.file}`:''}${x.by&&x.by.length?`, drawn by ${x.by.join(', ')}`:''}${x.place?`; seen in ${x.place}`:''}`));L.push('')}
 $('a-skip').addEventListener('change',update);$('keepart').addEventListener('change',update);
 document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))rememberArt()},true);
-function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;
+function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;const img=location.hash.startsWith('#img=')?decodeURIComponent(location.hash.slice(5)):''; /* from the Art Assets library's Edit: the picture rides in the hash */
+ if(q.get('from')&&!$('links').value.trim())$('links').value=q.get('from');if(img.startsWith('data:image/'))fetch(img).then(r=>r.blob()).then(b=>addFiles([new File([b],id.replace(/[^\w-]/g,'_')+'.png',{type:b.type})])).catch(()=>{});
  if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
  history.replaceState(null,'',location.pathname);renderProjects();renderTypes();renderArea();renderDetails()}
 /* ---- size check (25 Nov 2026): "How big is this?" weighs what the form holds and suggests a job size;
