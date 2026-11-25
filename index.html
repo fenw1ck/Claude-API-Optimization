@@ -63,6 +63,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .redirect{background:var(--soft);border-radius:12px;padding:12px 14px;margin-top:10px;font-size:15px}
 a{color:var(--teal2)}
 .why{max-width:1240px;margin:0 auto;padding:0 max(5vw,16px) 50px}
+.lvl{border-left:3px solid var(--teal2);padding:6px 0 6px 12px;margin:8px 0}.lvl.miss{border-color:var(--coral)}.badge{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:1px 9px;border:1px solid var(--line)}
+.prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}.prev figure{margin:0;border:1px solid var(--line);border-radius:12px;padding:6px;background:var(--bg)}.prev canvas{width:100%;height:150px;display:block}.prev figcaption{font-size:13px;color:var(--sub);text-align:center}
 .why details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
 .why summary{cursor:pointer;font:700 17px Sora,sans-serif;min-height:30px}
 .why ul{margin:10px 0 0;padding-left:20px}.why li{margin:6px 0;max-width:75ch}
@@ -87,9 +89,18 @@ a{color:var(--teal2)}
   <input type="text" id="summary" placeholder="e.g. Lock 12's plate loses its letters on a phone">
   <label class="f" for="area">Where in the project <small>(optional, but it saves a search)</small></label><select id="area"></select></div>
  <div class="q" id="detailbox" hidden><h3><span class="n">4</span> <span id="detailtitle">Details</span></h3><div id="details"></div></div>
+ <div class="q" id="artbox" hidden><h3><span class="n">4b</span> The art</h3>
+  <p class="hint">Art is involved, so these come from the Art Asset Builder (now retired; <a href="https://fenw1ck.github.io/Art-Assets/builder-archive.html">old form</a>). Leave anything blank and it is decided from research.</p>
+  <label class="f" for="a-place">Where will it be seen? <small>(sets the view and the sizes it must read at)</small></label><select id="a-place"></select><p class="hint" id="a-placeinfo"></p>
+  <label class="f" for="a-look">Texture or look notes <small>(optional)</small></label><textarea id="a-look" placeholder="e.g. Salamanca golden stone, worn smooth down the middle"></textarea>
+  <label class="f">States <small>(suggested from what it is; untick or add more)</small></label><div class="chips" id="a-states"></div><input type="text" id="a-more" placeholder="more states, comma separated, e.g. broken" style="margin-top:10px">
+  <label class="f" for="a-repeat">Repeating structure <small>(optional)</small></label><select id="a-repeat"><option value="">Engine decides from research</option></select>
+  <label class="f" for="a-vary">Variation between copies <small>(optional)</small></label><select id="a-vary"><option value="">Engine decides (seeded: each copy differs, the same on every visit)</option></select>
+  <label class="f">What the research library already holds</label><div id="a-match"></div></div>
  <div class="q"><h3><span class="n">5</span> How big a job? </h3>
   <p class="hint">This sets how far Claude may go. Smaller jobs use less.</p><div class="chips" id="effort"></div>
   <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
+  <label class="f" for="experts">Sources to treat as expert <small>(optional: books, sites, people or files Claude should trust over a web search)</small></label><input type="text" id="experts" placeholder="e.g. Fitzpatrick's Elements; USDA PLANTS; the Stardew Valley wiki">
   <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"></div>
 </form>
 <aside class="panel">
@@ -109,6 +120,8 @@ a{color:var(--teal2)}
  <li><b>Done when</b> sets a finish line, so the work stops when it's met instead of polishing.</li>
  <li><b>How big a job</b> and <b>Leave alone</b> stop changes from spreading into refactors you didn't ask for.</li>
  <li><b>Before you start</b> on the ticket tells Claude which project notes to read. They hold the decisions already made, so nothing gets worked out twice.</li>
+ <li><b>The art questions</b> (shown when art is involved) used to be a separate form. One place means no art request starts in the wrong form, and when the research library already covers a subject the preview draws it here, with no Claude at all.</li>
+ <li><b>Sources to treat as expert</b> stop Claude searching the web for facts you already trust.</li>
  <li><b>One request per ticket</b> keeps each job small and easy to check. The ticket flags a summary that looks like two requests.</li>
 </ul></details></section>
 <script>
@@ -180,6 +193,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if(type==='bug'&&get('expected')&&get('expected')===get('actual'))out.push(['todo','Expected and actual are the same']);
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
+ if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),L=[];
@@ -189,6 +203,8 @@ function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFO
  L.push(`Effort: ${e[1]}: ${e[2]}`,'');
  if(t){L.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){L.push(`${l}:`);lines(v).forEach((x,i)=>L.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else L.push(`${l}: ${v}`)}L.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){L.push('## Done when');done.forEach(x=>L.push(`- [ ] ${x}`));L.push('')}
+ artBrief(L);
+ const ex=$('experts').value.trim();if(ex){L.push('## Sources to treat as expert');ex.split(/;|\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>L.push(`- ${x}`));L.push('')}
  const leave=lines($('leave').value);if(leave.length){L.push('## Leave alone');leave.forEach(x=>L.push(`- ${x}`));L.push('')}
  if($('links').value.trim())L.push(`Links: ${$('links').value.trim()}`,'');
  L.push('## Before you start');for(const q of ps){if(q.isNew)L.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else L.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
@@ -196,21 +212,75 @@ function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFO
  L.push('- Work on this request only. Ask at most one question, and only if you are blocked.');
  if(effort==='quick')L.push('- Keep the change as small as possible. No refactors or clean-ups.');
  L.push('- When done: say what changed and how you checked it.');return L.join('\n')}
-function update(){const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
+let started=false;
+function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
  $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
  $('meter').textContent=!projs.length&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
  const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML=artInvolved()&&type==='content'?`<div class="redirect">New art? The <a href="https://fenw1ck.github.io/Art-Assets/">Art Asset Builder</a> checks the research library and can draw known subjects with no AI at all.</div>`:'';
+ $('redirect').innerHTML='';renderArt();
  save()}
-function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
-['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';$('experts').value=d.experts||'';artLoad(d);['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
+['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
-function start(list){PROJECTS=list;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();update()}
+$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+/* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
+   The research library and the drawing programs load from the Art Assets site, so they are always current;
+   when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
+const ART_SITE='https://fenw1ck.github.io/Art-Assets/';
+const PLACES={
+ euclid:[['Hall or room (perspective)','perspective','20–400 px'],['Greenhouse','perspective','20–300 px'],['Map','top-down icon','6–24 px'],['Lock plate','flat, bronze','150–500 px'],['Shop or inventory item','icon','48–128 px'],['Character and clothes','side','64–300 px'],['Opening scene','scene','full screen']],
+ 'planting-guide':[['Garden plan symbol','side symbol','16–96 px'],['Plant detail card','side','200–400 px'],['Garden (garden.js)','top-down','8–48 px per cell']],
+ other:[['Shared piece (several projects)','side','16–400 px'],['Somewhere else (say in look notes)','to be decided','to be decided']]};
+const PATTERNS=['Recursive shoot (like the tomato)','Repeated fork (pepper, trees)','Opposite pairs turned 90° (mint family)','Compound frond (parsley)','Umbel of umbels (dill)','Golden-angle spiral (lettuce, sunflower)','Whorl stack (lavender)','Overlapping rows (feathers, roof tiles)','Tiling with jitter (floors, ivy)','Ring repeat (crowns, astrolabes)','No repetition'];
+const VARY=['Every copy identical','Palette swaps between copies','Parts swapped between copies','Wear varies between copies'];
+const A={place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null};let LIB=[],BY={},lastStates='';
+PATTERNS.forEach(p=>$('a-repeat').insertAdjacentHTML('beforeend',`<option>${esc(p)}</option>`));VARY.forEach(p=>$('a-vary').insertAdjacentHTML('beforeend',`<option>${esc(p)}</option>`));
+const anames=e=>[e.id,e.title,...(e.aliases||[])].filter(Boolean).map(s=>String(s).toLowerCase());
+const chain=e=>{const out=[e];while(out.at(-1).parent&&out.at(-1).parent!=='none'){const p=BY[out.at(-1).parent];if(!p||out.includes(p)){out.push({id:out.at(-1).parent,missing:true});break}out.push(p)}return out};
+const rootOf=e=>chain(e).filter(x=>!x.missing).at(-1);
+function afind(q){q=String(q||'').toLowerCase().trim().replace(/^(a|an|the)\s+/,'');if(q.length<2)return null;
+ return LIB.find(e=>anames(e).includes(q))||LIB.find(e=>anames(e).some(n=>q.includes(n)&&n.length>3))||LIB.filter(e=>anames(e).some(n=>n.includes(q))).sort((a,b)=>a.id.length-b.id.length)[0]||null}
+const plantId=e=>window.PLANTS&&[e.id,...(e.aliases||[])].map(n=>String(n).toLowerCase().replace(/[ ()]+/g,'_')).find(n=>PLANTS.byId[n]);
+const DRAW={container:{name:'containers.js',can:e=>!!window.CONTAINERS,draw:(c,e,st,W,H,seed)=>CONTAINERS.drawChest(c,e.merged||{},W/2,H-12,Math.min(W*.62,H*1.05),st,seed,{fill:.7})},
+ plant:{name:'plants.js',can:e=>!!plantId(e),draw:(c,e,st,W,H,seed)=>{const m={immature:'young',declining:'past'};PLANTS.drawFit(c,PLANTS.byId[plantId(e)],W/2,H-8,H-20,m[st]||st,seed)}}};
+const drawer=e=>{const d=e&&DRAW[e.class];return d&&d.can(e)?d:null};
+function suggestStates(what,root){const w=what.toLowerCase();
+ if(root==='plants'||/plant|tree|herb|flower|vine|shrub|tomato|basil|fern|moss|ivy/.test(w))return[['seedling',1],['immature',1],['mature',1],['declining',1],['dead',1],['dormant',/tree|shrub|perennial|fig|apple|pear|peach|rhubarb|berry|lavender|thyme|mint/.test(w)?1:0]];
+ if(/lamp|lantern|torch|candle|sconce|chandelier|light/.test(w))return[['off',1],['on',1]];
+ if(/door|gate/.test(w))return[['closed',1],['open',1]];if(/chest|box|book|scroll|jar|amphora|lid/.test(w))return[['closed',1],['open',1]];
+ if(/fountain/.test(w))return[['dry',1],['running',1]];if(root==='birds'||/bird|robin|sparrow|owl|hawk|crow|duck|wren|finch/.test(w))return[['perched',1],['flying',1]];return[['one state',1]]}
+const artWhat=()=>(get('item')||$('summary').value).trim();
+function aplaces(){const ids=PS().map(p=>p.id).filter(i=>i!==ART);let L=[];ids.forEach(i=>(PLACES[i]||[]).forEach(x=>L.push([`${PROJECTS.find(p=>p.id===i)?.name||i}: ${x[0]}`,x[1],x[2]])));return L.concat(PLACES.other)}
+const placeData=()=>aplaces().find(x=>x[0]===A.place);
+const astates=()=>[...$('a-states').querySelectorAll('input:checked')].map(i=>i.value).concat(A.more.split(',').map(s=>s.trim()).filter(Boolean));
+function renderArt(){const on=artInvolved();$('artbox').hidden=!on;if(!on)return;
+ const sel=$('a-place'),L=aplaces();sel.innerHTML='<option value="">Choose…</option>'+L.map(([n])=>`<option ${n===A.place?'selected':''}>${esc(n)}</option>`).join('');const d=placeData();$('a-placeinfo').textContent=d?`View: ${d[1]}. Sizes on screen: ${d[2]}.`:'';
+ const what=artWhat(),e=afind(what),root=e?rootOf(e).id:'',s=e&&e.merged&&Array.isArray(e.merged.states)?e.merged.states.map(n=>[n,1]):suggestStates(what,root),key=s.map(x=>x[0]).join();
+ if(key!==lastStates){lastStates=key;$('a-states').innerHTML=s.map(([n,on])=>`<label><input type="checkbox" value="${esc(n)}" ${(A.states?A.states.includes(n):on)?'checked':''}><span>${esc(n)}</span></label>`).join('');$('a-states').querySelectorAll('input').forEach(i=>i.onchange=()=>{A.states=astates();update()})}
+ const box=$('a-match');if(!LIB.length){box.innerHTML='<p class="note">The research library could not be loaded from the Art Assets site.</p>';return}
+ if(what.length<2){box.innerHTML='<p class="note">Name the art ("Which one" or the summary) and what the library already holds appears here.</p>';return}
+ let h='';const radio=(v,t,def)=>`<label><input type="radio" name="a-research" value="${v}" ${(A.research||def)===v?'checked':''}><span>${t}</span></label>`;
+ if(e){h+=`<p style="margin:0 0 6px">Filed as <b>${esc(e.title)}</b>.</p>`+chain(e).map(l=>l.missing?`<div class="lvl miss"><b>${esc(l.id)}</b>: no entry yet</div>`:`<div class="lvl"><b>${esc(l.title)}</b> <span class="badge">${esc(l.depth)}</span> <span class="badge">${esc(l.sources)} sources</span><div class="note">${l.gaps&&l.gaps.length?'Gaps: '+esc(l.gaps.join('; ')):'No gaps listed'}</div></div>`).join('');
+  const gaps=chain(e).some(l=>l.missing||(l.gaps&&l.gaps.length));h+=`<p style="margin:12px 0 6px;font-weight:600">Research</p><div class="chips">${radio('use','Use as is',gaps?'gaps':'use')}${radio('gaps','Fill the gaps',gaps?'gaps':'use')}${radio('deep','Deeper search',gaps?'gaps':'use')}</div>`;
+  const dr=drawer(e);h+=dr?`<p style="margin:12px 0 0;font-weight:600">The engine can draw this now, with no AI: ${esc(dr.name)}</p><div class="prev" id="a-prev"></div>`:`<p class="note" style="margin-top:10px">No drawing program for this class yet.</p>`}
+ else{const roots=LIB.filter(x=>x.kind!=='technique');h+=`<p style="margin:0">Nothing filed under "${esc(what)}" yet. It gets a new entry; only what sets it apart is researched.</p><label class="f" for="a-parent">File it under</label><select id="a-parent"><option value="">Not sure (Claude decides)</option>${roots.map(x=>`<option value="${esc(x.id)}" ${x.id===A.parent?'selected':''}>${esc(x.title)}</option>`).join('')}</select>`}
+ box.innerHTML=h;box.querySelectorAll('input[name=a-research]').forEach(r=>r.onchange=()=>{A.research=r.value;update()});if($('a-parent'))$('a-parent').onchange=()=>{A.parent=$('a-parent').value;update()};
+ const pv=$('a-prev');if(pv){const dr=drawer(e),sts=astates();pv.innerHTML=sts.map(st=>`<figure><canvas></canvas><figcaption>${esc(st)}</figcaption></figure>`).join('');
+  pv.querySelectorAll('canvas').forEach((cv,i)=>{const r=devicePixelRatio||1,W=cv.clientWidth||150,H=150;cv.width=W*r;cv.height=H*r;const c=cv.getContext('2d');c.setTransform(r,0,0,r,0,0);try{dr.draw(c,e,sts[i],W,H,7)}catch(err){c.fillStyle='#b33';c.fillText('Could not draw',6,20)}})}}
+function artBrief(L){if(!artInvolved())return;const d=placeData(),e=afind(artWhat()),sts=astates();
+ L.push('## Art brief',`What: ${artWhat()||'(name it in "Which one" or the summary)'}`,`Where it will be seen: ${d?`${d[0]} (view: ${d[1]}; sizes: ${d[2]})`:'not chosen'}`,`Look notes: ${A.look.trim()||'none, so decide from research'}`,`States: ${sts.join(', ')||'engine decides'}`,`Repeating structure: ${A.repeat||'engine decides from research'}`,`Variation between copies: ${A.vary||'engine decides (seeded: each copy differs, the same on every visit)'}`);
+ if(e){L.push(`Research library: ${e.id} (${chain(e).map(l=>l.missing?l.id+': missing':`${l.id}: ${l.depth}`).join(' → ')})`);const ch=A.research||(chain(e).some(l=>l.missing||(l.gaps&&l.gaps.length))?'gaps':'use');L.push(`Research choice: ${{use:'use as is',gaps:'fill the listed gaps',deep:'run a deeper search'}[ch]}`);if(drawer(e))L.push(`The engine can already draw it with ${drawer(e).name}: build on that.`)}
+ else if(artWhat())L.push(`Research library: no entry yet. New entry under: ${A.parent||'Claude decides'}`);
+ L.push('Process: check research/ first, add what is learned, check with tools/contact-sheet.py.','')}
+[['a-look','look'],['a-more','more'],['a-repeat','repeat'],['a-vary','vary'],['a-place','place']].forEach(([id,k])=>{const el=$(id);el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{A[k]=el.value;update()})});
+const artLoad=d=>{Object.assign(A,d.art||{});$('a-look').value=A.look;$('a-more').value=A.more;$('a-repeat').value=A.repeat;$('a-vary').value=A.vary};
+for(const s of['core.js','plants.js','containers.js']){const t=document.createElement('script');t.src=ART_SITE+s;t.async=false;t.onload=()=>update();document.head.appendChild(t)}
+fetch(ART_SITE+'research/index.json').then(r=>r.json()).then(j=>{LIB=Array.isArray(j)?j:[];BY=Object.fromEntries(LIB.map(e=>[e.id,e]));update()}).catch(()=>{});
+function start(list){PROJECTS=list;started=true;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
 </script>
