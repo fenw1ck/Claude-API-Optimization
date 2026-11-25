@@ -18,7 +18,8 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
 3. **Copy the ticket, or open it as a GitHub issue** in that project's repo (pre-filled).
 
 **Size check, reused answers, files, and getting the work back** (25 Nov 2026).
-- Step 5 is now **Size check**: **How big is this?** suggests Quick, Normal or Thorough from the "Done when" lines, projects, bundle parts, art and length, with a one-click "Use"; the ticket flags a Quick job that looks bigger.
+- **The form sizes the job, not you** (25 Nov 2026, replaces the old Size check): step 5 is now **Extras** and has no job-size choice. The form counts the "Done when" lines of every ticket in the bundle together, plus extra projects, bundle parts, art and a long description (`sizeOf`), and writes Quick, Normal or Thorough into the ticket's Effort line with the reasons. People tend to underestimate; the count doesn't.
+- **From the Art Assets library** (25 Nov 2026): its **Edit this art** opens this form with `?improve=<id>&title=<name>&from=<library link>#img=<PNG data URL>`; the form fills an Improve ticket, puts the library link in Links and attaches the picture under Screenshots and files.
 - **Reused answers:** copying or opening a ticket saves each project's job size, area, things to leave alone and expert sources (in the browser); ticking the project later fills the empty ones and says which. Every ticket also tells Claude that the project's notes are its memory and to record lasting decisions there.
 - **Something is broken** has a **Where exactly** field. Step 5 has a drag-and-drop area for screenshots and documents (listed on the ticket; drag them into the GitHub issue or paste them into the chat; images have a Copy button). Links are checked as web addresses, and a bad one holds the ticket.
 - Step 6, **How do you want the work back?** (pull request, straight to main, files to download, a published page, or the reply; formats; where it goes) is written into every ticket and remembered for every project unless unticked. The **Getting the work back** tab (`#guide`) explains each way, the one-time setup (connecting GitHub, turning on Pages) and common mistakes.
@@ -29,7 +30,7 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
 
 **What's already open** (25 Nov 2026). Ticking a project lists its open pull requests and issues under the project chips (Art Assets too when art is involved), straight from GitHub's public API: one check per repo per visit, within GitHub's 60-an-hour limit for pages that aren't signed in. Open pull requests also go into the ticket's **Before you start**, telling Claude to branch from one if the work builds on it, and the ticket flags them so you can merge first.
 
-Every ticket ends with **Before you start**. It names the project notes Claude should read first, says to ask at most one question, and limits the change to the job size you chose (quick / normal / thorough).
+Every ticket ends with **Before you start**. It names the project notes Claude should read first, says to ask at most one question, and limits the change to the job size the form worked out (quick / normal / thorough).
 
 **Art is always saved in Art Assets.** Choosing "art" as the kind of content ticks Art Assets automatically, and the ticket tells Claude to build the art there and copy it into the other projects. With several projects ticked, the GitHub issue opens in Art Assets when art is involved, and otherwise in the first project ticked.
 

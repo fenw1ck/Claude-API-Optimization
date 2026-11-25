@@ -113,13 +113,13 @@ a{color:var(--teal2)}
   <div id="parts"></div>
   <div class="chips" id="keepbox" hidden style="margin-top:6px"><label><input type="checkbox" id="keepart"><span>Keep the art from the last ticket on this one<small id="keeplist"></small></span></label></div>
   <div class="btns" style="padding:4px 0 0"><button type="button" class="ghost" id="addart">This project needs art</button><button type="button" class="ghost" id="addmore">And another thing</button></div></div>
- <div class="q"><h3><span class="n">5</span> Size check: how big a job? </h3>
-  <p class="hint">How much work you expect, which sets how far Claude may go. Smaller jobs use less. Not sure? Use the button at the bottom.</p><div class="chips" id="effort"></div>
+ <div class="q"><h3><span class="n">5</span> Extras <small>(all optional)</small></h3>
+  <div class="chips" id="effort" style="display:none"></div><!-- job size is set by the form from the "Done when" lines (sizeOf), not chosen -->
   <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
   <label class="f" for="experts">Sources to treat as expert <small>(optional: books, sites, people or files Claude should trust over a web search)</small></label><input type="text" id="experts" placeholder="e.g. Fitzpatrick's Elements; USDA PLANTS; the Stardew Valley wiki">
   <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"><p class="err" id="linkerr" role="alert" hidden></p>
   <label class="f" for="filein">Screenshots or files <small>(optional; most useful for "Something is broken")</small></label><div class="drop" id="drop" tabindex="0" role="button" aria-label="Add screenshots or files">Drop screenshots or documents here, or <label for="filein" style="text-decoration:underline;cursor:pointer">choose files</label><input type="file" id="filein" multiple hidden></div><p class="hint" style="margin-top:6px">A ticket is text, so the files travel beside it: after <b>Open as GitHub issue</b>, drag them into the issue (GitHub keeps them), or paste them into the chat. Images have a Copy button.</p><ul class="files" id="filelist"></ul>
-  <div class="btns" style="padding:12px 0 0"><button type="button" class="ghost" id="sizebtn">How big is this?</button></div><div id="sizeout" aria-live="polite"></div></div>
+  <div hidden><button type="button" class="ghost" id="sizebtn">How big is this?</button><div id="sizeout"></div></div></div>
  <div class="q" id="outbox"><h3><span class="n">6</span> How do you want the work back?</h3>
   <p class="hint">Remembered for every ticket and project unless you untick the box. New to this? See <a href="#guide">Getting the work back</a>.</p>
   <div class="chips" id="o-how"></div>
@@ -253,7 +253,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
  const artP=PROJECTS.find(q=>q.id===ART),ps=PS().concat(bundleArt()&&!projs.includes(ART)&&artP?[artP]:[]),pl=q=>q.isNew?`${q.name}${q.repo?` (${q.repo})`:' (no repo yet)'}`:`${q.name} (${q.repo}) ${q.site}`;
- const ctx=[];if(ps.length>1){ctx.push('Projects:');ps.forEach(q=>ctx.push(`- ${pl(q)}`))}else ctx.push(`Project: ${p?pl(p):'(choose)'}`);if(ps.some(q=>q.isNew)&&$('newwhat').value.trim())ctx.push(`What it is: ${$('newwhat').value.trim()}`);if($('area').value)ctx.push(`Area: ${$('area').value}`);ctx.push(`Effort: ${e[1]}: ${e[2]}`,'');
+ const ctx=[];if(ps.length>1){ctx.push('Projects:');ps.forEach(q=>ctx.push(`- ${pl(q)}`))}else ctx.push(`Project: ${p?pl(p):'(choose)'}`);if(ps.some(q=>q.isNew)&&$('newwhat').value.trim())ctx.push(`What it is: ${$('newwhat').value.trim()}`);if($('area').value)ctx.push(`Area: ${$('area').value}`);{const z=sizeOf();ctx.push(`Effort: ${e[1]}: ${e[2]}${z.why.length?` (sized by the form from ${z.why.join(', ')})`:''}`,'')}
  const body=[];if(t){body.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){body.push(`${l}:`);lines(v).forEach((x,i)=>body.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else body.push(`${l}: ${v}`)}body.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){body.push('## Done when');done.forEach(x=>body.push(`- [ ] ${x}`));body.push('')}
  artBrief(body);
@@ -278,7 +278,7 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const L=[`# Bundle of ${n} tickets: ${sum||'(summary)'}`,'','Shared context for every ticket below:',...ctx,...tail,'',`---`,'',`## Ticket 1 of ${n}: ${title1}`,'',...body.map(demote)];
  PARTS.forEach((pt,i)=>{L.push('---','',`## Ticket ${i+2} of ${n}: ${partTitle(pt)}`,'');partBody(pt,L)});return L.join('\n')}
 let started=false;
-function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
+function update(){if(!started)return;effort=sizeOf().size; /* the engine sizes the job (all tickets' "Done when" lines together), not the user */const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
  $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
  $('meter').textContent=artSkip()&&artOnly()&&!need?'No ticket needed':!projs.length&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
@@ -404,7 +404,8 @@ function keepLines(L){const la=lastArt();if(!$('keepart').checked||!la)return;L.
  la.list.forEach(x=>L.push(`- ${x.what}${x.file?`: fenw1ck/Art-Assets ${x.file}`:''}${x.by&&x.by.length?`, drawn by ${x.by.join(', ')}`:''}${x.place?`; seen in ${x.place}`:''}`));L.push('')}
 $('a-skip').addEventListener('change',update);$('keepart').addEventListener('change',update);
 document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))rememberArt()},true);
-function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;
+function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;const img=location.hash.startsWith('#img=')?decodeURIComponent(location.hash.slice(5)):''; /* from the Art Assets library's Edit: the picture rides in the hash */
+ if(q.get('from')&&!$('links').value.trim())$('links').value=q.get('from');if(img.startsWith('data:image/'))fetch(img).then(r=>r.blob()).then(b=>addFiles([new File([b],id.replace(/[^\w-]/g,'_')+'.png',{type:b.type})])).catch(()=>{});
  if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
  history.replaceState(null,'',location.pathname);renderProjects();renderTypes();renderArea();renderDetails()}
 /* ---- size check (25 Nov 2026): "How big is this?" weighs what the form holds and suggests a job size;
@@ -425,7 +426,6 @@ function applyDefs(id){const d=getDefs()[id];if(!d)return;const used=[];
  if(d.leave&&!$('leave').value.trim()){$('leave').value=d.leave;used.push('things to leave alone')}
  if(d.experts&&!$('experts').value.trim()){$('experts').value=d.experts;used.push('expert sources')}
  if(d.area&&!$('area').value&&projs.length===1&&[...$('area').options].some(o=>o.value===d.area)){$('area').value=d.area;used.push('area')}
- if(d.effort&&d.effort!==effort&&!effortTouched){effort=d.effort;renderEffort();used.push('job size')}
  const n=PROJECTS.find(p=>p.id===id);$('defsnote').textContent=used.length?`Filled from your last ${n?n.name:id} ticket: ${used.join(', ')}. Change anything that doesn't fit.`:''}
 let effortTouched=false;
 document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))saveDefs()},true);
