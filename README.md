@@ -17,6 +17,8 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
    - a missing finish line.
 3. **Copy the ticket, or open it as a GitHub issue** in that project's repo (pre-filled).
 
+**Bundles: one task, several tickets** (25 Nov 2026). Under the main request, **This project needs art** adds a *New art* card (what it is, where it will be seen, look notes, states, done when; it checks the research library as you type) and becomes **Add more art**; **And another thing** adds any other kind of request (kind, one sentence, details, done when). Each card is its own ticket that shares everything else on the form: projects, area, job size, sources, things to leave alone, notes to read. The copy box then holds the whole bundle: the shared context once, then *Ticket 1 of n*, *Ticket 2 of n*… with an instruction to do them in order, one at a time. **Open as GitHub issue** opens the bundle as one issue; under the ticket, each part also has its own issue link (art parts open in Art Assets), with a line naming the other tickets in the bundle. Parts are saved in the draft; with no parts the ticket is exactly as before.
+
 Every ticket ends with **Before you start**. It names the project notes Claude should read first, says to ask at most one question, and limits the change to the job size you chose (quick / normal / thorough).
 
 **Art is always saved in Art Assets.** Choosing "art" as the kind of content ticks Art Assets automatically, and the ticket tells Claude to build the art there and copy it into the other projects. With several projects ticked, the GitHub issue opens in Art Assets when art is involved, and otherwise in the first project ticked.
