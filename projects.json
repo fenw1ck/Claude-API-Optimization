@@ -4,27 +4,173 @@
   "name": "Euclid game",
   "repo": "fenw1ck/euclid",
   "site": "https://fenw1ck.github.io/euclid/",
-  "docs": ["NOTES.md", "GAME_DESIGN.md"],
-  "areas": ["Home page proofs (index.html)", "Proof data (proofs.js)", "Thumbnails (thumbs.js)", "Game: opening scene", "Game: locks and plates", "Game: halls and doors", "Game: greenhouses", "Game: map", "Game: chests, coins and shop", "Game: items and clothes", "Game: music and sound", "Win messages (win-messages.csv)"],
-  "content": ["proposition", "lock", "hall", "item", "great mind (statue plaque)", "song", "win message"]
+  "docs": [
+   "NOTES.md",
+   "GAME_DESIGN.md"
+  ],
+  "areas": [
+   "Home page proofs (index.html)",
+   "Proof data (proofs.js)",
+   "Thumbnails (thumbs.js)",
+   "Game: opening scene",
+   "Game: locks and plates",
+   "Game: halls and doors",
+   "Game: greenhouses",
+   "Game: map",
+   "Game: chests, coins and shop",
+   "Game: items and clothes",
+   "Game: music and sound",
+   "Win messages (win-messages.csv)"
+  ],
+  "content": [
+   "proposition",
+   "lock",
+   "hall",
+   "item",
+   "great mind (statue plaque)",
+   "song",
+   "win message"
+  ]
  },
  {
   "id": "planting-guide",
   "name": "Planting Guide",
   "repo": "fenw1ck/Planting-Guide",
   "site": "https://fenw1ck.github.io/Planting-Guide/",
-  "docs": ["README.md", "roadmap.md", "FACTORS.md"],
-  "areas": ["Planner (2D)", "Garden view (3D)", "Find plants", "Pests & diseases", "Research tab", "Settings and key bindings", "Builds (save, export, import)", "Conditions bar", "Calendar (planned)", "Plant data"],
-  "content": ["plant", "pest or disease", "tool review", "technique", "pair rule (neighbours)"]
+  "docs": [
+   "README.md",
+   "roadmap.md",
+   "FACTORS.md"
+  ],
+  "areas": [
+   "Planner (2D)",
+   "Garden view (3D)",
+   "Find plants",
+   "Pests & diseases",
+   "Research tab",
+   "Settings and key bindings",
+   "Builds (save, export, import)",
+   "Conditions bar",
+   "Calendar (planned)",
+   "Plant data"
+  ],
+  "content": [
+   "plant",
+   "pest or disease",
+   "tool review",
+   "technique",
+   "pair rule (neighbours)"
+  ]
  },
  {
   "id": "art-assets",
   "name": "Art Assets",
   "repo": "fenw1ck/Art-Assets",
   "site": "https://fenw1ck.github.io/Art-Assets/",
-  "docs": ["README.md", "research/README.md"],
-  "areas": ["Builder page (index.html)", "Research library (research/)", "plants.js", "containers.js", "garden.js", "core.js", "Tools (research.py, contact-sheet.py)"],
-  "content": ["research entry", "drawing program for a new class"],
+  "docs": [
+   "README.md",
+   "research/README.md"
+  ],
+  "areas": [
+   "Builder page (index.html)",
+   "Research library (research/)",
+   "plants.js",
+   "containers.js",
+   "garden.js",
+   "core.js",
+   "Tools (research.py, contact-sheet.py)"
+  ],
+  "content": [
+   "research entry",
+   "drawing program for a new class"
+  ],
   "artBuilder": "https://fenw1ck.github.io/Art-Assets/"
+ },
+ {
+  "id": "free-data-library",
+  "name": "Free Data Library",
+  "repo": "fenw1ck/Free-Data-Library",
+  "site": "https://fenw1ck.github.io/Free-Data-Library/",
+  "docs": [
+   "index.html (the whole site; there are no notes files yet)"
+  ],
+  "areas": [
+   "Catalogue of sources",
+   "General finders",
+   "Dewey classes 000–900",
+   "How to use data well (library practice)",
+   "Licences",
+   "Search and filters",
+   "Page layout and style"
+  ],
+  "content": [
+   "data source entry",
+   "Dewey class or subclass",
+   "library-practice note"
+  ]
+ },
+ {
+  "id": "muscle-anatomy-trainer",
+  "name": "Muscle Anatomy Trainer",
+  "repo": "fenw1ck/Muscle_Anatomy_Trainer",
+  "site": "https://fenw1ck.github.io/Muscle_Anatomy_Trainer/",
+  "docs": [
+   "muscle-expansion-plan.md",
+   "phase6-audit.md",
+   "meditation-phrases.md"
+  ],
+  "areas": [
+   "Learn",
+   "Practice",
+   "Speed run",
+   "Massage Trainer",
+   "Meditate",
+   "How This Works",
+   "Muscle data (origins, insertions, layers)",
+   "Drawing (bones, layers, insets)",
+   "Audio and pronunciation (audio/)",
+   "Voice notebook (MuscleTrainer_voice.ipynb)"
+  ],
+  "content": [
+   "muscle",
+   "muscle family split",
+   "pronunciation",
+   "meditation phrase",
+   "audio clip"
+  ]
+ },
+ {
+  "id": "claude-api-optimization",
+  "name": "Claude API Optimization",
+  "repo": "fenw1ck/Claude-API-Optimization",
+  "site": "https://fenw1ck.github.io/Claude-API-Optimization/",
+  "docs": [
+   "README.md"
+  ],
+  "areas": [
+   "Form (index.html)",
+   "Project list (projects.json)",
+   "Ticket checks",
+   "Ticket wording"
+  ],
+  "content": [
+   "project in projects.json",
+   "request type",
+   "ticket check"
+  ]
+ },
+ {
+  "id": "new",
+  "name": "New project",
+  "repo": "",
+  "site": "",
+  "docs": [],
+  "areas": [],
+  "content": [
+   "first version",
+   "plan",
+   "prototype"
+  ],
+  "isNew": true
  }
 ]

@@ -26,6 +26,6 @@ New art goes through the [Art Asset Builder](https://fenw1ck.github.io/Art-Asset
 | File | Purpose |
 | --- | --- |
 | `index.html` | the whole page (no build step) |
-| `projects.json` | the projects the form knows: repo, site, docs to read first, areas, kinds of content. Edit it to add a project. |
+| `projects.json` | the projects the form knows (Euclid game, Planting Guide, Art Assets, Free Data Library, Muscle Anatomy Trainer, Claude API Optimization, and "New project"): repo, site, docs to read first, areas, kinds of content. Edit it to add a project. |
 
 Drafts are kept in your browser only.

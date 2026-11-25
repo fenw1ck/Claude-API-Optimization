@@ -75,7 +75,10 @@ a{color:var(--teal2)}
 <main><div class="grid">
 <form id="f" autocomplete="off">
  <div class="q"><h3><span class="n">1</span> Which project? <span class="req">required</span></h3>
-  <div class="chips" id="projects"></div><div id="redirect"></div></div>
+  <div class="chips" id="projects"></div><div id="redirect"></div>
+  <div id="newbox" hidden><label class="f" for="newname">Name of the new project</label><input type="text" id="newname" placeholder="e.g. Sudoku Tutor">
+  <label class="f" for="newwhat">What it is, in a sentence</label><input type="text" id="newwhat" placeholder="e.g. A page that teaches sudoku techniques one at a time">
+  <label class="f" for="newrepo">GitHub repo, if you've made one <small>(optional)</small></label><input type="text" id="newrepo" placeholder="fenw1ck/Sudoku-Tutor"></div></div>
  <div class="q"><h3><span class="n">2</span> What kind of request? <span class="req">required</span></h3>
   <div class="chips" id="types"></div></div>
  <div class="q"><h3><span class="n">3</span> In one sentence <span class="req">required</span></h3>
@@ -141,11 +144,12 @@ const EFFORT=[['quick','Quick','the smallest change that works; one or two files
 const VAGUE=/\b(fix it|make it better|nicer|improve|stuff|things|etc\.?|somehow|properly|as needed|asap|everything)\b/i;
 let proj='',type='',effort='normal';
 function chips(box,name,items,cur,on){box.innerHTML=items.map(([v,l,s])=>`<label><input type="radio" name="${name}" value="${esc(v)}" ${v===cur?'checked':''}><span>${esc(l)}${s?`<small>${esc(s)}</small>`:''}</span></label>`).join('');box.querySelectorAll('input').forEach(i=>i.onchange=()=>on(i.value))}
-function P(){return PROJECTS.find(p=>p.id===proj)}
-function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.repo]),proj,v=>{proj=v;renderArea();renderDetails();update()})}
+function P(){const p=PROJECTS.find(p=>p.id===proj);if(p&&p.isNew){const r=$('newrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');return Object.assign({},p,{name:'New project: '+($('newname').value.trim()||'(name)'),repo:r})}return p}
+function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),proj,v=>{proj=v;renderArea();renderDetails();update()})}
 function renderTypes(){chips($('types'),'type',Object.entries(TYPES).map(([k,t])=>[k,t.label,t.sub]),type,v=>{type=v;renderDetails();update()})}
 function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;update()})}
-function renderArea(){const p=P(),keep=$('area').value;$('area').innerHTML='<option value="">Not sure</option>'+(p?p.areas.map(a=>`<option ${a===keep?'selected':''}>${esc(a)}</option>`).join(''):'')+'<option value="Other">Other (say in the details)</option>'}
+function renderNew(){$('newbox').hidden=proj!=='new'}
+function renderArea(){renderNew();const p=P(),keep=$('area').value;$('area').innerHTML='<option value="">Not sure</option>'+(p?p.areas.map(a=>`<option ${a===keep?'selected':''}>${esc(a)}</option>`).join(''):'')+'<option value="Other">Other (say in the details)</option>'}
 const vals={};
 function renderDetails(){const t=TYPES[type],box=$('details');$('detailbox').hidden=!t;if(!t)return;$('detailtitle').textContent=t.title;
  box.innerHTML=t.fields.map(([k,l,kind,ph,req,help])=>{const id='d-'+k,v=vals[type+k]||'';let opts=ph;if(k==='kind')opts=['',...((P()&&P().content)||[])];
@@ -157,6 +161,7 @@ const lines=s=>s.split('\n').map(x=>x.replace(/^\s*(\d+[.)]|[-*•])\s*/,'').tri
 /* the readiness checks: what makes a brief cheap to act on */
 function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words=sum?sum.split(/\s+/).length:0;
  out.push(proj?['ok','Project chosen']:['need','Choose the project']);
+ if(proj==='new'){const miss=[['newname','its name'],['newwhat','what it is']].filter(([k])=>!$(k).value.trim()).map(x=>x[1]);out.push(miss.length?['need','For a new project, add '+miss.join(' and ')]:['ok','New project is described'])}
  out.push(type?['ok','Request type chosen']:['need','Choose what kind of request it is']);
  if(!sum)out.push(['need','Write the one-sentence summary']);
  else if(words<4)out.push(['todo','The summary is very short: say what and where']);
@@ -173,13 +178,13 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
  return out}
 function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),L=[];
  L.push(`# ${t?'['+t.label+'] ':''}${sum||'(summary)'}`,'');
- L.push(`Project: ${p?`${p.name} (${p.repo}) ${p.site}`:'(choose)'}`);if($('area').value)L.push(`Area: ${$('area').value}`);
+ L.push(`Project: ${p?(p.isNew?`${p.name}${p.repo?` (${p.repo})`:' (no repo yet)'}`:`${p.name} (${p.repo}) ${p.site}`):'(choose)'}`);if(p&&p.isNew&&$('newwhat').value.trim())L.push(`What it is: ${$('newwhat').value.trim()}`);if($('area').value)L.push(`Area: ${$('area').value}`);
  L.push(`Effort: ${e[1]}: ${e[2]}`,'');
  if(t){L.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){L.push(`${l}:`);lines(v).forEach((x,i)=>L.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else L.push(`${l}: ${v}`)}L.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){L.push('## Done when');done.forEach(x=>L.push(`- [ ] ${x}`));L.push('')}
  const leave=lines($('leave').value);if(leave.length){L.push('## Leave alone');leave.forEach(x=>L.push(`- ${x}`));L.push('')}
  if($('links').value.trim())L.push(`Links: ${$('links').value.trim()}`,'');
- L.push('## Before you start');if(p)L.push(`- Read ${p.docs.join(', ')} in ${p.repo} first: they record the decisions already made.`);
+ L.push('## Before you start');if(p&&p.isNew)L.push(p.repo?`- This is a new project in ${p.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else if(p)L.push(`- Read ${p.docs.join(', ')} in ${p.repo} first: they record the decisions already made.`);
  L.push('- Work on this request only. Ask at most one question, and only if you are blocked.');
  if(effort==='quick')L.push('- Keep the change as small as possible. No refactors or clean-ups.');
  L.push('- When done: say what changed and how you checked it.');return L.join('\n')}
@@ -187,16 +192,16 @@ function update(){const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c
  $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
  $('meter').textContent=!proj&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
- const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;
- const issue=$('issue');if(ready){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
+ const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
+ const issue=$('issue');if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
  $('redirect').innerHTML=p&&p.artBuilder&&type==='content'?`<div class="redirect">New art? The <a href="${esc(p.artBuilder)}">Art Asset Builder</a> checks the research library and can draw known subjects with no AI at all.</div>`:'';
  save()}
-function save(){try{localStorage.setItem('rb-draft',JSON.stringify({proj,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');proj=d.proj||'';type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';return d}catch(e){return{}}}
-['summary','leave','links'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({proj,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');proj=d.proj||'';type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
+['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{proj='';type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{proj='';type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 function start(list){PROJECTS=list;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
