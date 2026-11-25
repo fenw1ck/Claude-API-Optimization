@@ -99,10 +99,12 @@ a{color:var(--teal2)}
   <label class="f">States <small>(suggested from what it is; untick or add more)</small></label><div class="chips" id="a-states"></div><input type="text" id="a-more" placeholder="more states, comma separated, e.g. broken" style="margin-top:10px">
   <label class="f" for="a-repeat">Repeating structure <small>(optional)</small></label><select id="a-repeat"><option value="">Engine decides from research</option></select>
   <label class="f" for="a-vary">Variation between copies <small>(optional)</small></label><select id="a-vary"><option value="">Engine decides (seeded: each copy differs, the same on every visit)</option></select>
-  <label class="f">What the research library already holds</label><div id="a-match"></div></div>
+  <label class="f">What the research library already holds</label><div id="a-match"></div>
+  <div class="chips" style="margin-top:12px"><label><input type="checkbox" id="a-skip"><span>Claude can leave the art alone<small>the preview already covers it, so the ticket says so instead of asking for art</small></span></label></div></div>
  <div class="q" id="bundlebox"><h3><span class="n">4c</span> More to this task? <span class="req">optional</span></h3>
   <p class="hint">Split a big task into parts. Each part becomes its own ticket that shares everything else on this form (projects, area, job size, notes to read); the copy box holds the whole bundle, and each part can be opened as its own GitHub issue.</p>
   <div id="parts"></div>
+  <div class="chips" id="keepbox" hidden style="margin-top:6px"><label><input type="checkbox" id="keepart"><span>Keep the art from the last ticket on this one<small id="keeplist"></small></span></label></div>
   <div class="btns" style="padding:4px 0 0"><button type="button" class="ghost" id="addart">This project needs art</button><button type="button" class="ghost" id="addmore">And another thing</button></div></div>
  <div class="q"><h3><span class="n">5</span> How big a job? </h3>
   <p class="hint">This sets how far Claude may go. Smaller jobs use less.</p><div class="chips" id="effort"></div>
@@ -202,7 +204,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
  if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
- partChecks(out);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
+ partChecks(out);if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
@@ -212,11 +214,12 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){body.push('## Done when');done.forEach(x=>body.push(`- [ ] ${x}`));body.push('')}
  artBrief(body);
  const tail=[];const ex=$('experts').value.trim();if(ex){tail.push('## Sources to treat as expert');ex.split(/;|\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>tail.push(`- ${x}`));tail.push('')}
+ keepLines(tail);
  const leave=lines($('leave').value);if(leave.length){tail.push('## Leave alone');leave.forEach(x=>tail.push(`- ${x}`));tail.push('')}
  if($('links').value.trim())tail.push(`Links: ${$('links').value.trim()}`,'');
  tail.push('## Before you start');for(const q of ps){if(q.isNew)tail.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else tail.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
  for(const r of openRepos()){const prs=openPRs(r);if(prs.length)tail.push(`- Open pull requests in ${r}, not merged yet: ${prs.map(x=>`#${x.n} "${x.t}"`).join(', ')}. If this work builds on one of them, branch from it; otherwise branch from main.`)}
- if(artInvolved()||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
+ if((artInvolved()&&!artSkip())||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  if(bundle)tail.push(`- This is a bundle of ${n} tickets that share this context. Do them in order, one at a time: finish a ticket, say what changed and how you checked it, then start the next. A later ticket may build on an earlier one.`);
  else if(only!=null&&n>1)tail.push(`- This is ticket ${only+1} of ${n} in the bundle "${sum||'(summary)'}". The other tickets: ${[t?'['+t.label+'] '+(sum||''):sum,...PARTS.map(partTitle)].filter((x,i)=>i!==only).map(x=>`"${x}"`).join(', ')}. Do only this one.`);
  tail.push(bundle?'- Work on these tickets only. Ask at most one question per ticket, and only if you are blocked.':'- Work on this request only. Ask at most one question, and only if you are blocked.');
@@ -231,19 +234,19 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
 let started=false;
 function update(){if(!started)return;const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
  $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
- $('meter').textContent=!projs.length&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
+ $('meter').textContent=artSkip()&&artOnly()&&!need?'No ticket needed':!projs.length&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
  const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML='';renderOpen();renderArt();refreshParts();
+ $('redirect').innerHTML='';renderKeep();renderOpen();renderArt();refreshParts();
  const pl=$('partlinks');if(PARTS.length&&ready){const artP=PROJECTS.find(q=>q.id===ART),items=[[0,P()],...PARTS.map((pt,i)=>[i+1,pt.kind==='art'&&artP?artP:P()])];pl.innerHTML='<li class="note">Or open each ticket as its own issue:</li>'+items.map(([k,q])=>{if(!q||!q.repo)return'';const tx=ticket(k),ti=tx.split('\n')[0].replace(/^#\s*/,'');return`<li><a href="https://github.com/${q.repo}/issues/new?title=${encodeURIComponent(ti)}&body=${encodeURIComponent(tx.split('\n').slice(2).join('\n'))}" target="_blank" rel="noopener">Ticket ${k+1} of ${PARTS.length+1}: ${esc(ti)}</a> <small class="note">(${esc(q.repo)})</small></li>`}).join('')}else pl.innerHTML='';
  save()}
-function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';$('experts').value=d.experts||'';PARTS=Array.isArray(d.parts)?d.parts:[];artLoad(d);['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,experts:$('experts').value,art:Object.assign({},A,{states:A.states}),parts:PARTS,askip:$('a-skip').checked,keep:$('keepart').checked,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';$('experts').value=d.experts||'';PARTS=Array.isArray(d.parts)?d.parts:[];$('a-skip').checked=!!d.askip;$('keepart').checked=!!d.keep;artLoad(d);['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
 ['summary','leave','links','experts','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','experts','newname','newwhat','newrepo','a-look','a-more','a-repeat','a-vary'].forEach(k=>$(k).value='');Object.assign(A,{place:'',look:'',more:'',repeat:'',vary:'',research:'',parent:'',states:null});lastStates='';PARTS=[];renderParts();$('a-skip').checked=false;$('keepart').checked=false;renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 /* ---- art: the Art Asset Builder's questions, merged in (25 Nov 2026). Shown whenever art is involved.
    The research library and the drawing programs load from the Art Assets site, so they are always current;
    when the library already covers a subject, the preview draws it right here with no AI at all. ---- */
@@ -289,8 +292,9 @@ function renderArt(){const on=artInvolved();$('artbox').hidden=!on;if(!on)return
  const pv=$('a-prev');if(pv){const dr=drawer(e),sts=astates();pv.innerHTML=sts.map(st=>`<figure><canvas></canvas><figcaption>${esc(st)}</figcaption></figure>`).join('');
   pv.querySelectorAll('canvas').forEach((cv,i)=>{const r=devicePixelRatio||1,W=cv.clientWidth||150,H=150;cv.width=W*r;cv.height=H*r;const c=cv.getContext('2d');c.setTransform(r,0,0,r,0,0);try{dr.draw(c,e,sts[i],W,H,7)}catch(err){c.fillStyle='#b33';c.fillText('Could not draw',6,20)}})}}
 function artBrief(L){if(!artInvolved())return;const d=placeData(),e=afind(artWhat()),sts=astates();
+ if(artSkip()){L.push('## Art',`${artWhat()||'The art'} is already covered${e&&drawer(e)?` (the engine draws it with ${drawer(e).name})`:''}. Leave the art alone: nothing to draw or research.`,'');return}
  L.push('## Art brief',`What: ${artWhat()||'(name it in "Which one" or the summary)'}`,`Where it will be seen: ${d?`${d[0]} (view: ${d[1]}; sizes: ${d[2]})`:'not chosen'}`,`Look notes: ${A.look.trim()||'none, so decide from research'}`,`States: ${sts.join(', ')||'engine decides'}`,`Repeating structure: ${A.repeat||'engine decides from research'}`,`Variation between copies: ${A.vary||'engine decides (seeded: each copy differs, the same on every visit)'}`);
- if(e){L.push(`Research library: ${e.id} (${chain(e).map(l=>l.missing?l.id+': missing':`${l.id}: ${l.depth}`).join(' → ')})`);const ch=A.research||(chain(e).some(l=>l.missing||(l.gaps&&l.gaps.length))?'gaps':'use');L.push(`Research choice: ${{use:'use as is',gaps:'fill the listed gaps',deep:'run a deeper search'}[ch]}`);if(drawer(e))L.push(`The engine can already draw it with ${drawer(e).name}: build on that.`)}
+ if(e){L.push(`Research library: ${e.id} (${chain(e).map(l=>l.missing?l.id+': missing':`${l.id}: ${l.depth}`).join(' → ')})`);const ch=A.research||(chain(e).some(l=>l.missing||(l.gaps&&l.gaps.length))?'gaps':'use');L.push(`Research choice: ${{use:'use as is',gaps:'fill the listed gaps',deep:'run a deeper search'}[ch]}`);if(e.file)L.push(`Research file: fenw1ck/Art-Assets ${e.file}${e.used_by&&e.used_by.length?`; drawn by ${e.used_by.join(', ')}`:''}`);if(drawer(e))L.push(`The engine can already draw it with ${drawer(e).name}: build on that.`)}
  else if(artWhat())L.push(`Research library: no entry yet. New entry under: ${A.parent||'Claude decides'}`);
  L.push('Process: check research/ first, add what is learned, check with tools/contact-sheet.py.','')}
 [['a-look','look'],['a-more','more'],['a-repeat','repeat'],['a-vary','vary'],['a-place','place']].forEach(([id,k])=>{const el=$(id);el.addEventListener(el.tagName==='SELECT'?'change':'input',()=>{A[k]=el.value;update()})});
@@ -337,7 +341,27 @@ function renderOpen(){const box=$('openwork'),repos=openRepos();repos.forEach(lo
   const prs=o.items.filter(x=>x.pr),iss=o.items.filter(x=>!x.pr);if(!o.items.length)return`<div class="openw">Nothing open in ${esc(r)}.</div>`;
   const li=x=>`<li><span class="tag">${x.pr?(x.draft?'draft PR':'PR'):'issue'}</span><a href="${esc(x.u)}" target="_blank" rel="noopener">#${x.n} ${esc(x.t)}</a></li>`;
   return`<div class="openw"><b>Open in ${esc(r)}:</b> ${prs.length} pull request${prs.length===1?'':'s'}, ${iss.length} issue${iss.length===1?'':'s'}${prs.length?'. Merge pull requests first if this request builds on them; the ticket lists them for Claude.':''}<ul>${prs.concat(iss).map(li).join('')}</ul></div>`}).join('')}
-function start(list){PROJECTS=list;started=true;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
+/* ---- art that needs no Claude, and art carried over (25 Nov 2026) ----
+   "Claude can leave the art alone": when the preview already covers it, the Art brief becomes one line; a ticket
+   that was only that art says no ticket is needed. The art on a copied or opened ticket is remembered, and the next
+   ticket can carry it (name, research file, drawing program) so Claude finds it at once.
+   ?improve=<library id>&title=<title> (the "Improve this art" button on an Art Assets library card) starts a ticket
+   to improve that art. ---- */
+const artSkip=()=>artInvolved()&&$('a-skip').checked;
+const artOnly=()=>type==='content'&&get('kind')===ARTKIND&&!PARTS.length;
+function rememberArt(){const list=[];if(artInvolved()&&artWhat()&&!artSkip()){const e=afind(artWhat()),d=placeData();list.push({what:artWhat(),id:e&&e.id,file:e&&e.file,by:e&&e.used_by,place:d&&d[0]})}
+ artParts().forEach(pt=>{if(!pt.what)return;const e=afind(pt.what);list.push({what:pt.what,id:e&&e.id,file:e&&e.file,by:e&&e.used_by,place:pt.place})});
+ if(list.length)try{localStorage.setItem('rb-lastart',JSON.stringify({when:new Date().toISOString().slice(0,10),list}))}catch(e){}}
+const lastArt=()=>{try{return JSON.parse(localStorage.getItem('rb-lastart')||'null')}catch(e){return null}};
+function renderKeep(){const la=lastArt(),box=$('keepbox');if(!la||!la.list||!la.list.length){box.hidden=true;return}box.hidden=false;$('keeplist').textContent=la.list.map(x=>x.what).join(', ')+` (${la.when})`}
+function keepLines(L){const la=lastArt();if(!$('keepart').checked||!la)return;L.push('## Art from the last ticket','Already made or requested; reuse it rather than drawing it again:');
+ la.list.forEach(x=>L.push(`- ${x.what}${x.file?`: fenw1ck/Art-Assets ${x.file}`:''}${x.by&&x.by.length?`, drawn by ${x.by.join(', ')}`:''}${x.place?`; seen in ${x.place}`:''}`));L.push('')}
+$('a-skip').addEventListener('change',update);$('keepart').addEventListener('change',update);
+document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlinks a'))rememberArt()},true);
+function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;
+ if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
+ history.replaceState(null,'',location.pathname);renderProjects();renderTypes();renderArea();renderDetails()}
+function start(list){PROJECTS=list;started=true;const d=load();improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
 </script>
