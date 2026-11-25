@@ -7,7 +7,7 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
 ## How it works
 
 1. **Fill in the order.**
-   - Required: the project, the kind of request (something broken, a feature, new content, research, a question) and a one-sentence summary.
+   - Required: the project or projects (tick every one the work touches), the kind of request (something broken, a feature, new content, research, a question) and a one-sentence summary.
    - Each kind then asks for its own details: steps to reproduce, "done when", the source to follow, how deep to research.
 2. **Fix what the ticket flags.** The ticket checks itself as you type:
    - required fields;
@@ -18,6 +18,8 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
 3. **Copy the ticket, or open it as a GitHub issue** in that project's repo (pre-filled).
 
 Every ticket ends with **Before you start**. It names the project notes Claude should read first, says to ask at most one question, and limits the change to the job size you chose (quick / normal / thorough).
+
+**Art is always saved in Art Assets.** Choosing "art" as the kind of content ticks Art Assets automatically, and the ticket tells Claude to build the art there and copy it into the other projects. With several projects ticked, the GitHub issue opens in Art Assets when art is involved, and otherwise in the first project ticked.
 
 New art goes through the [Art Asset Builder](https://fenw1ck.github.io/Art-Assets/) instead, which can draw known subjects with no AI at all.
 

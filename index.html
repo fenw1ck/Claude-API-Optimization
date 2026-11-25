@@ -74,7 +74,8 @@ a{color:var(--teal2)}
 </div></header>
 <main><div class="grid">
 <form id="f" autocomplete="off">
- <div class="q"><h3><span class="n">1</span> Which project? <span class="req">required</span></h3>
+ <div class="q"><h3><span class="n">1</span> Which projects? <span class="req">required</span></h3>
+  <p class="hint">Tick every project the work touches. Art made for a project is always saved in Art Assets too.</p>
   <div class="chips" id="projects"></div><div id="redirect"></div>
   <div id="newbox" hidden><label class="f" for="newname">Name of the new project</label><input type="text" id="newname" placeholder="e.g. Sudoku Tutor">
   <label class="f" for="newwhat">What it is, in a sentence</label><input type="text" id="newwhat" placeholder="e.g. A page that teaches sudoku techniques one at a time">
@@ -142,26 +143,31 @@ const TYPES={
   ['context','What you already know or tried','textarea','',false]]}};
 const EFFORT=[['quick','Quick','the smallest change that works; one or two files; no clean-ups'],['normal','Normal','what the request needs, and tests or checks for it'],['thorough','Thorough','may touch several files; update docs and notes too']];
 const VAGUE=/\b(fix it|make it better|nicer|improve|stuff|things|etc\.?|somehow|properly|as needed|asap|everything)\b/i;
-let proj='',type='',effort='normal';
-function chips(box,name,items,cur,on){box.innerHTML=items.map(([v,l,s])=>`<label><input type="radio" name="${name}" value="${esc(v)}" ${v===cur?'checked':''}><span>${esc(l)}${s?`<small>${esc(s)}</small>`:''}</span></label>`).join('');box.querySelectorAll('input').forEach(i=>i.onchange=()=>on(i.value))}
-function P(){const p=PROJECTS.find(p=>p.id===proj);if(p&&p.isNew){const r=$('newrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');return Object.assign({},p,{name:'New project: '+($('newname').value.trim()||'(name)'),repo:r})}return p}
-function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),proj,v=>{proj=v;renderArea();renderDetails();update()})}
+let projs=[],type='',effort='normal';const ART='art-assets',ARTKIND='art (drawings, graphics)';
+function chips(box,name,items,cur,on,multi){box.innerHTML=items.map(([v,l,s])=>`<label><input type="${multi?'checkbox':'radio'}" name="${name}" value="${esc(v)}" ${(multi?cur.includes(v):v===cur)?'checked':''}><span>${esc(l)}${s?`<small>${esc(s)}</small>`:''}</span></label>`).join('');box.querySelectorAll('input').forEach(i=>i.onchange=()=>on(i.value,i.checked))}
+function PS(){return projs.map(id=>X(PROJECTS.find(p=>p.id===id))).filter(Boolean)}
+const artInvolved=()=>projs.includes(ART)||get('kind')===ARTKIND;
+/* the main project: where the issue goes. Art Assets when art is involved, since art is built there */
+function P(){const ps=PS();return artInvolved()?(ps.find(p=>p.id===ART)||ps[0]):ps[0]}
+function ensureArt(){if(!projs.includes(ART)){projs.push(ART);artAdded=true;renderProjects();renderArea()}}let artAdded=false;
+function X(p){if(p&&p.isNew){const r=$('newrepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/$/,'');return Object.assign({},p,{name:'New project: '+($('newname').value.trim()||'(name)'),repo:r})}return p}
+function renderProjects(){chips($('projects'),'project',PROJECTS.map(p=>[p.id,p.name,p.isNew?'not on GitHub yet':p.repo]),projs,(v,on)=>{projs=on?[...projs.filter(x=>x!==v),v]:projs.filter(x=>x!==v);if(v===ART&&!on)artAdded=false;renderArea();renderDetails();update()},true)}
 function renderTypes(){chips($('types'),'type',Object.entries(TYPES).map(([k,t])=>[k,t.label,t.sub]),type,v=>{type=v;renderDetails();update()})}
 function renderEffort(){chips($('effort'),'effort',EFFORT.map(([k,l,s])=>[k,l,s]),effort,v=>{effort=v;update()})}
-function renderNew(){$('newbox').hidden=proj!=='new'}
-function renderArea(){renderNew();const p=P(),keep=$('area').value;$('area').innerHTML='<option value="">Not sure</option>'+(p?p.areas.map(a=>`<option ${a===keep?'selected':''}>${esc(a)}</option>`).join(''):'')+'<option value="Other">Other (say in the details)</option>'}
+function renderNew(){$('newbox').hidden=!projs.includes('new')}
+function renderArea(){renderNew();const ps=PS(),keep=$('area').value,one=ps.length===1;$('area').innerHTML='<option value="">Not sure</option>'+ps.filter(p=>p.areas.length).map(p=>{const o=p.areas.map(a=>{const v=one?a:`${p.name}: ${a}`;return`<option value="${esc(v)}" ${v===keep?'selected':''}>${esc(a)}</option>`}).join('');return one?o:`<optgroup label="${esc(p.name)}">${o}</optgroup>`}).join('')+'<option value="Other">Other (say in the details)</option>'}
 const vals={};
 function renderDetails(){const t=TYPES[type],box=$('details');$('detailbox').hidden=!t;if(!t)return;$('detailtitle').textContent=t.title;
- box.innerHTML=t.fields.map(([k,l,kind,ph,req,help])=>{const id='d-'+k,v=vals[type+k]||'';let opts=ph;if(k==='kind')opts=['',...((P()&&P().content)||[])];
+ box.innerHTML=t.fields.map(([k,l,kind,ph,req,help])=>{const id='d-'+k,v=vals[type+k]||'';let opts=ph;if(k==='kind')opts=['',...new Set(PS().flatMap(p=>p.content||[])),ARTKIND];
   const input=kind==='textarea'?`<textarea id="${id}" placeholder="${esc(ph)}">${esc(v)}</textarea>`:kind==='select'?`<select id="${id}">${opts.map(o=>`<option ${o===v?'selected':''} value="${esc(o)}">${esc(o||'Choose…')}</option>`).join('')}</select>`:`<input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v)}">`;
   return`<label class="f" for="${id}">${esc(l)} ${req?'':'<small>(optional)</small>'}</label>${help?`<p class="hint">${esc(help)}</p>`:''}${input}`}).join('');
- box.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{vals[type+el.id.slice(2)]=el.value;update()}))}
+ box.querySelectorAll('input,textarea,select').forEach(el=>el.addEventListener('input',()=>{vals[type+el.id.slice(2)]=el.value;if(el.id==='d-kind'&&el.value===ARTKIND)ensureArt();update()}))}
 const get=k=>(vals[type+k]||'').trim();
 const lines=s=>s.split('\n').map(x=>x.replace(/^\s*(\d+[.)]|[-*•])\s*/,'').trim()).filter(Boolean);
 /* the readiness checks: what makes a brief cheap to act on */
 function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words=sum?sum.split(/\s+/).length:0;
- out.push(proj?['ok','Project chosen']:['need','Choose the project']);
- if(proj==='new'){const miss=[['newname','its name'],['newwhat','what it is']].filter(([k])=>!$(k).value.trim()).map(x=>x[1]);out.push(miss.length?['need','For a new project, add '+miss.join(' and ')]:['ok','New project is described'])}
+ const ps=PS();out.push(ps.length?['ok',ps.length>1?`${ps.length} projects: ${ps.map(p=>p.name.replace(/^New project: /,'')).join(', ')}`:'Project chosen']:['need','Choose the project (or several)']);if(artAdded&&projs.includes(ART))out.push(['ok','Art Assets added: art is always saved there']);
+ if(projs.includes('new')){const miss=[['newname','its name'],['newwhat','what it is']].filter(([k])=>!$(k).value.trim()).map(x=>x[1]);out.push(miss.length?['need','For a new project, add '+miss.join(' and ')]:['ok','New project is described'])}
  out.push(type?['ok','Request type chosen']:['need','Choose what kind of request it is']);
  if(!sum)out.push(['need','Write the one-sentence summary']);
  else if(words<4)out.push(['todo','The summary is very short: say what and where']);
@@ -174,34 +180,36 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if(type==='bug'&&get('expected')&&get('expected')===get('actual'))out.push(['todo','Expected and actual are the same']);
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
- if(!$('area').value&&proj&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
+ if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),L=[];
  L.push(`# ${t?'['+t.label+'] ':''}${sum||'(summary)'}`,'');
- L.push(`Project: ${p?(p.isNew?`${p.name}${p.repo?` (${p.repo})`:' (no repo yet)'}`:`${p.name} (${p.repo}) ${p.site}`):'(choose)'}`);if(p&&p.isNew&&$('newwhat').value.trim())L.push(`What it is: ${$('newwhat').value.trim()}`);if($('area').value)L.push(`Area: ${$('area').value}`);
+ const ps=PS(),pl=q=>q.isNew?`${q.name}${q.repo?` (${q.repo})`:' (no repo yet)'}`:`${q.name} (${q.repo}) ${q.site}`;
+ if(ps.length>1){L.push('Projects:');ps.forEach(q=>L.push(`- ${pl(q)}`))}else L.push(`Project: ${p?pl(p):'(choose)'}`);if(ps.some(q=>q.isNew)&&$('newwhat').value.trim())L.push(`What it is: ${$('newwhat').value.trim()}`);if($('area').value)L.push(`Area: ${$('area').value}`);
  L.push(`Effort: ${e[1]}: ${e[2]}`,'');
  if(t){L.push(`## ${t.title}`);for(const[k,l,kind]of t.fields){const v=get(k);if(!v||k==='done')continue;if(kind==='textarea'&&lines(v).length>1){L.push(`${l}:`);lines(v).forEach((x,i)=>L.push(k==='steps'?`${i+1}. ${x}`:`- ${x}`))}else L.push(`${l}: ${v}`)}L.push('')}
  const done=t&&t.fields.some(f=>f[0]==='done')?lines(get('done')):[];if(done.length){L.push('## Done when');done.forEach(x=>L.push(`- [ ] ${x}`));L.push('')}
  const leave=lines($('leave').value);if(leave.length){L.push('## Leave alone');leave.forEach(x=>L.push(`- ${x}`));L.push('')}
  if($('links').value.trim())L.push(`Links: ${$('links').value.trim()}`,'');
- L.push('## Before you start');if(p&&p.isNew)L.push(p.repo?`- This is a new project in ${p.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else if(p)L.push(`- Read ${p.docs.join(', ')} in ${p.repo} first: they record the decisions already made.`);
+ L.push('## Before you start');for(const q of ps){if(q.isNew)L.push(q.repo?`- This is a new project in ${q.repo}. Start a NOTES.md there that records decisions, so later requests don't repeat them.`:'- This is a new project with no repo yet. Suggest a repo name for the owner to create on GitHub, then start a NOTES.md there that records decisions.');else L.push(`- Read ${q.docs.join(', ')} in ${q.repo} first: they record the decisions already made.`)}
+ if(artInvolved()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);L.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  L.push('- Work on this request only. Ask at most one question, and only if you are blocked.');
  if(effort==='quick')L.push('- Keep the change as small as possible. No refactors or clean-ups.');
  L.push('- When done: say what changed and how you checked it.');return L.join('\n')}
 function update(){const c=checks(),need=c.filter(x=>x[0]==='need').length,todo=c.filter(x=>x[0]==='todo').length;
  $('checks').innerHTML=c.map(([k,m])=>`<li class="${k}"><i aria-hidden="true">${k==='ok'?'✓':k==='need'?'!':'•'}</i><span>${esc(m)}</span></li>`).join('');
- $('meter').textContent=!proj&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
+ $('meter').textContent=!projs.length&&!type&&!$('summary').value?'Not started':need?`${need} to fill in`:todo?`Ready, ${todo} tip${todo>1?'s':''}`:'Ready';
  $('meter').style.background=need?'rgba(255,255,255,.14)':todo?'rgba(242,180,90,.35)':'rgba(111,207,151,.38)';
  const txt=ticket();$('out').textContent=txt;const p=P(),ready=!need&&p;$('issue').title=p&&!p.repo?'Add the repo to open an issue':'';
- const issue=$('issue');if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
- $('redirect').innerHTML=p&&p.artBuilder&&type==='content'?`<div class="redirect">New art? The <a href="${esc(p.artBuilder)}">Art Asset Builder</a> checks the research library and can draw known subjects with no AI at all.</div>`:'';
+ const issue=$('issue');issue.textContent=p&&p.repo&&PS().length>1?`Open as GitHub issue in ${p.repo}`:'Open as GitHub issue';if(ready&&p.repo){const title=txt.split('\n')[0].replace(/^#\s*/,'');issue.href=`https://github.com/${p.repo}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(txt.split('\n').slice(2).join('\n'))}`;issue.removeAttribute('aria-disabled');issue.style.opacity=1;issue.style.pointerEvents=''}else{issue.href='#';issue.setAttribute('aria-disabled','true');issue.style.opacity=.45;issue.style.pointerEvents='none'}
+ $('redirect').innerHTML=artInvolved()&&type==='content'?`<div class="redirect">New art? The <a href="https://fenw1ck.github.io/Art-Assets/">Art Asset Builder</a> checks the research library and can draw known subjects with no AI at all.</div>`:'';
  save()}
-function save(){try{localStorage.setItem('rb-draft',JSON.stringify({proj,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
-function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');proj=d.proj||'';type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
+function save(){try{localStorage.setItem('rb-draft',JSON.stringify({projs,type,effort,vals,summary:$('summary').value,area:$('area').value,leave:$('leave').value,links:$('links').value,newname:$('newname').value,newwhat:$('newwhat').value,newrepo:$('newrepo').value}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('rb-draft')||'{}');projs=d.projs||(d.proj?[d.proj]:[]);type=d.type||'';effort=d.effort||'normal';Object.assign(vals,d.vals||{});$('summary').value=d.summary||'';$('leave').value=d.leave||'';$('links').value=d.links||'';['newname','newwhat','newrepo'].forEach(k=>$(k).value=d[k]||'');return d}catch(e){return{}}}
 ['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).addEventListener('input',update));$('area').addEventListener('change',update);
 $('f').addEventListener('submit',e=>e.preventDefault());
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('out').textContent);$('copied').hidden=false;setTimeout(()=>$('copied').hidden=true,1800)}catch(e){const r=document.createRange();r.selectNodeContents($('out'));getSelection().removeAllRanges();getSelection().addRange(r)}});
-$('reset').addEventListener('click',()=>{proj='';type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
+$('reset').addEventListener('click',()=>{projs=[];artAdded=false;type='';effort='normal';for(const k in vals)delete vals[k];['summary','leave','links','newname','newwhat','newrepo'].forEach(k=>$(k).value='');renderProjects();renderTypes();renderEffort();renderArea();renderDetails();update()});
 function start(list){PROJECTS=list;const d=load();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
