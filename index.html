@@ -106,11 +106,12 @@ a{color:var(--teal2)}
   <div id="parts"></div>
   <div class="chips" id="keepbox" hidden style="margin-top:6px"><label><input type="checkbox" id="keepart"><span>Keep the art from the last ticket on this one<small id="keeplist"></small></span></label></div>
   <div class="btns" style="padding:4px 0 0"><button type="button" class="ghost" id="addart">This project needs art</button><button type="button" class="ghost" id="addmore">And another thing</button></div></div>
- <div class="q"><h3><span class="n">5</span> How big a job? </h3>
-  <p class="hint">This sets how far Claude may go. Smaller jobs use less.</p><div class="chips" id="effort"></div>
+ <div class="q"><h3><span class="n">5</span> Size check: how big a job? </h3>
+  <p class="hint">How much work you expect, which sets how far Claude may go. Smaller jobs use less. Not sure? Use the button at the bottom.</p><div class="chips" id="effort"></div>
   <label class="f" for="leave">Leave alone <small>(optional: files, features or styles not to touch)</small></label><textarea id="leave" placeholder="e.g. Don't change the colour rules or proofs.js"></textarea>
   <label class="f" for="experts">Sources to treat as expert <small>(optional: books, sites, people or files Claude should trust over a web search)</small></label><input type="text" id="experts" placeholder="e.g. Fitzpatrick's Elements; USDA PLANTS; the Stardew Valley wiki">
-  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…"></div>
+  <label class="f" for="links">Links <small>(optional: a page, screenshot, issue or file)</small></label><input type="text" id="links" placeholder="https://…">
+  <div class="btns" style="padding:12px 0 0"><button type="button" class="ghost" id="sizebtn">How big is this?</button></div><div id="sizeout" aria-live="polite"></div></div>
 </form>
 <aside class="panel">
  <div class="ticket">
@@ -204,7 +205,7 @@ function checks(){const out=[],sum=$('summary').value.trim(),t=TYPES[type],words
   if((type==='feature'||type==='content')&&get('done'))out.push(['ok','Has a finish line ("Done when")']);
   if(type==='content'&&!get('done'))out.push(['todo','Add "Done when" so the work stops at the right point'])}
  if(artInvolved()){if(!A.place)out.push(['todo','Say where the art will be seen: it sets the view and the sizes']);const e=afind(artWhat());if(e&&drawer(e))out.push(['ok','The engine can already draw this: check the preview first, it may need no Claude at all'])}
- partChecks(out);if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
+ partChecks(out);if(effort==='quick'){const z=sizeOf();if(z.done>=5||z.np>1||z.parts)out.push(['todo',`Size check: Quick, but ${[z.done>=5&&z.done+' "Done when" lines',z.np>1&&z.np+' projects',z.parts&&(z.parts+1)+' tickets'].filter(Boolean).join(' and ')}. Try "How big is this?"`])}if(artSkip()&&artOnly())out.push(['ok','No ticket needed: the art is covered and nothing else is asked. Keep it only as a note.']);{const n=openRepos().reduce((a,r)=>a+openPRs(r).length,0);if(n)out.push(['todo',`${n} open pull request${n>1?'s':''} in these projects: merge first if this builds on ${n>1?'them':'it'}`])}
  if(!$('area').value&&projs.length&&type&&type!=='question'&&type!=='research')out.push(['todo','Pick where in the project, if you know: it saves a search']);
  return out}
 function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=EFFORT.find(x=>x[0]===effort),n=PARTS.length+1,bundle=n>1&&only==null;
@@ -361,6 +362,16 @@ document.addEventListener('click',e=>{if(e.target.closest('#copy,#issue,#partlin
 function improveFromURL(){const q=new URLSearchParams(location.search),id=q.get('improve');if(!id)return;const title=q.get('title')||id;
  if(!projs.includes(ART))projs.push(ART);type='content';vals.contentkind=ARTKIND;vals.contentitem=title;$('summary').value=`Improve the ${title} art`;A.research='gaps';
  history.replaceState(null,'',location.pathname);renderProjects();renderTypes();renderArea();renderDetails()}
+/* ---- size check (25 Nov 2026): "How big is this?" weighs what the form holds and suggests a job size;
+   the ticket also flags a Quick job that looks bigger. ---- */
+function sizeOf(){const t=TYPES[type],done=(t&&t.fields.some(f=>f[0]==='done')?lines(get('done')).length:0)+PARTS.reduce((a,pt)=>a+lines(pt.done||'').length,0),np=PS().length,parts=PARTS.length,
+  text=t?t.fields.map(f=>get(f[0])).join(' '):'',words=text.split(/\s+/).filter(Boolean).length,art=(artInvolved()&&!artSkip())||bundleArt(),why=[];
+ let sc=0;if(done){sc+=done;why.push(`${done} "Done when" line${done>1?'s':''}`)}if(np>1){sc+=2*(np-1);why.push(`${np} projects`)}if(parts){sc+=3*parts;why.push(`${parts+1} tickets in the bundle`)}
+ if(art){sc+=2;why.push('new art (research, drawing, checking)')}if(words>80){sc+=2;why.push('a long description')}if(type==='research'||type==='question'){sc-=1}
+ return{size:sc<=3?'quick':sc<=8?'normal':'thorough',why,done,np,parts}}
+function sizeShow(){const z=sizeOf(),e=EFFORT.find(x=>x[0]===z.size);$('sizeout').innerHTML=`<div class="redirect"><b>Looks ${esc(e[1])}</b>: ${esc(e[2])}. ${z.why.length?'Because of '+esc(z.why.join(', '))+'.':'Not much is asked yet.'} ${z.size===effort?'That is what you have.':`<button type="button" class="ghost small" id="sizeuse">Use ${esc(e[1])}</button>`}</div>`;
+ const u=$('sizeuse');if(u)u.onclick=()=>{effort=z.size;renderEffort();update();sizeShow()}}
+$('sizebtn').addEventListener('click',sizeShow);
 function start(list){PROJECTS=list;started=true;const d=load();improveFromURL();renderProjects();renderTypes();renderEffort();renderArea();if(d.area)$('area').value=d.area;renderDetails();renderParts();update()}
 fetch('projects.json').then(r=>r.json()).then(start).catch(()=>start([]));
 }
