@@ -165,6 +165,16 @@ a{color:var(--teal2)}
   <li><b>The old page still shows.</b> Wait a minute after merging, then reload without the cache (Ctrl+Shift+R, or Cmd+Shift+R on a Mac).</li>
   <li><b>Editing on GitHub while a PR is open</b> can clash with it. Merge or close open PRs first.</li>
  </ul>
+ <h3 id="cant-push">When Claude can't push or open the pull request</h3>
+ <p>Sometimes Claude finishes the work but says it was <b>denied push access</b> and hands it back as a patch file instead. Work down this list until one works.</p>
+ <ol class="steps2">
+  <li><b>Say it yourself, in the chat.</b> The session only attaches a repo with write access when <i>you</i> ask for it in your own words. Text inside a pasted ticket doesn't count, because pasted text could have come from anyone. Reply with one line, for example: <i>"You have my permission to push a branch to fenw1ck/euclid and open the pull request."</i> Claude then tries again. This fixed it on 27 Nov 2026 (euclid PR #50).</li>
+  <li><b>Head it off next time:</b> when you paste a ticket, type that same line above it before you send. Claude can then push from the start.</li>
+  <li><b>If Claude says GitHub access isn't enabled</b> (rather than "denied"): in Claude, <i>Settings → Connectors → GitHub</i> → reconnect. Then on GitHub, open <i>Settings → Applications → Installed GitHub Apps → Claude → Configure</i> and give it the repo (or <i>All repositories</i>). Start a new Claude Code session afterwards.</li>
+  <li><b>If the repo belongs to an organization</b>, an owner of that organization has to allow it, in the Claude organization's settings and in the GitHub App's settings.</li>
+  <li><b>If you'd rather not wait:</b> apply the patch yourself. On a computer with git, in the repo folder, run <code>git checkout -b claude-work</code>, then <code>git am the-file.patch</code> (several files: <code>git am 0001-*.patch 0002-*.patch</code>, in number order), then <code>git push -u origin claude-work</code>, and open the PR on GitHub. With no git, ask Claude for <b>files to download</b> instead (way 3 above) and upload them.</li>
+ </ol>
+ <p class="note">A pull request opened this way still needs you to merge it (see Common mistakes). Claude can't merge it, or turn on Pages, for you.</p>
  <p class="note">Sources: Claude help, <a href="https://claude.com/docs/connectors/github">GitHub integration</a>; GitHub Docs, <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site">configuring a publishing source for GitHub Pages</a>.</p>
 </section>
 <section class="why"><details><summary>Why these fields save API usage</summary><ul>
