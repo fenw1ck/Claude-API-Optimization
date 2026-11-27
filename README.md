@@ -32,7 +32,9 @@ A form that turns a request for any of fenw1ck's projects into a clear, structur
 
 **What's already open** (25 Nov 2026). Ticking a project lists its open pull requests and issues under the project chips (Art Assets too when art is involved), straight from GitHub's public API: one check per repo per visit, within GitHub's 60-an-hour limit for pages that aren't signed in. Open pull requests also go into the ticket's **Before you start**, telling Claude to branch from one if the work builds on it, and the ticket flags them so you can merge first.
 
-Every ticket ends with **Before you start**. It names the project notes Claude should read first, says to ask at most one question, and limits the change to the job size the form worked out (quick / normal / thorough).
+Every ticket ends with **Before you start**. It names the project notes Claude should read first, tells Claude when to ask questions, and limits the change to the job size the form worked out (quick / normal / thorough).
+
+**Questions (27 Nov 2026): ask when it saves rework.** The old line "Ask at most one question, and only if you are blocked" is gone. Every ticket now tells Claude to ask whenever an answer would save rework: before building something costly to redo (a map, an image, a layout, a look), when the request can be read more than one way, or when it needs permission (such as pushing to a repo). Questions come together at the start (for a bundle, for all its tickets), with choices where possible. Claude shouldn't ask what the notes, the code or a sensible default already answer, and if no one replies it takes the likeliest reading, says which, and carries on. Reason: a question up front costs far less than rebuilding a map or picture several times.
 
 **Art is always saved in Art Assets.** Choosing "art" as the kind of content ticks Art Assets automatically, and the ticket tells Claude to build the art there and copy it into the other projects. With several projects ticked, the GitHub issue opens in Art Assets when art is involved, and otherwise in the first project ticked.
 
