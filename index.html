@@ -278,7 +278,9 @@ function ticket(only){const p=P(),t=TYPES[type],sum=$('summary').value.trim(),e=
  if((artInvolved()&&!artSkip())||bundleArt()){const others=ps.filter(q=>q.id!==ART).map(q=>q.repo||q.name);tail.push(`- Art is saved in fenw1ck/Art-Assets: check its research/ library first, build the art there${others.length?`, then copy the files into ${others.join(' and ')}`:''}.`)}
  if(bundle)tail.push(`- This is a bundle of ${n} tickets that share this context. Do them in order, one at a time: finish a ticket, say what changed and how you checked it, then start the next. A later ticket may build on an earlier one.`);
  else if(only!=null&&n>1)tail.push(`- This is ticket ${only+1} of ${n} in the bundle "${sum||'(summary)'}". The other tickets: ${[t?'['+t.label+'] '+(sum||''):sum,...PARTS.map(partTitle)].filter((x,i)=>i!==only).map(x=>`"${x}"`).join(', ')}. Do only this one.`);
- tail.push(bundle?'- Work on these tickets only. Ask at most one question per ticket, and only if you are blocked.':'- Work on this request only. Ask at most one question, and only if you are blocked.');
+ /* questions (27 Nov 2026): ask when an answer saves rework, not only when blocked; the old rule was "at most one question, only if blocked" */
+  tail.push(bundle?'- Work on these tickets only.':'- Work on this request only.');
+  tail.push('- Ask questions whenever the answer would save rework: before building something costly to redo (a map, an image, a layout, a look), when the request can be read more than one way, or when you need my permission (for example, to push to a repo). Ask them together at the start'+(bundle?' for all the tickets':'')+', with choices where you can. Don’t ask what the notes, the code or a sensible default already answer. If I don’t reply, take the likeliest reading, say which, and carry on.');
  if(effort==='quick')tail.push('- Keep the change as small as possible. No refactors or clean-ups.');
  tail.push('- When done: say what changed and how you checked it.');
  const title1=`${t?'['+t.label+'] ':''}${sum||'(summary)'}`;
